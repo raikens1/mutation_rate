@@ -1,6 +1,7 @@
 # Custom files and directories #
 ################################
-
+helper_code/archive
+helper_code/playground
 
 # Compiled source #
 ###################
