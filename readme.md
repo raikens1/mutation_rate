@@ -6,10 +6,10 @@ in polymorphism patterns across populations
 
 ## To Do
 
-[] Make final forms of filtered vcfs available on Ben's website
-[] Post Rmarkdown code, revised to run smoothly in this repo
-[] Post data for R analyses
-[] Generate shell scripts (or examples of shell scripts) demonstrating how to filter 1kg vcfs
+-[ ] Make final forms of filtered vcfs available on Ben's website
+-[ ] Post Rmarkdown code, revised to run smoothly in this repo
+-[ ] Post data for R analyses
+-[ ] Generate shell scripts (or examples of shell scripts) demonstrating how to filter 1kg vcfs
 
 ## Pipeline
 
