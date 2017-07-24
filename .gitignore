@@ -8,7 +8,7 @@ gw_context_counts/archive
 *temp*
 *folded_counts.txt
 *chrom_counts*
-singletons_excluded/COSMO/cosmo_multiallelic
+singletons_excluded
 
 # Compiled source #
 ###################
