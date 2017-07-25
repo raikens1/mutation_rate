@@ -13,7 +13,9 @@ output:
 library(knitr)
 
 # set wd
-knitr::opts_knit$set(root.dir = 'C:/Users/VoightLab/Dropbox/SNP_rates/Raw_Data/singletons_excluded')
+knitr::opts_knit$set(root.dir = '../../Raw_Data/singletons_excluded')
+
+wd <- getwd()
 
 # color vector so that plot colorings match Harris
 h.colors <- c("dark blue", "magenta", "purple", "forest green", "#0099FF", "red")
