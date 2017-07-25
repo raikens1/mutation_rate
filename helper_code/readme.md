@@ -1,5 +1,9 @@
 # helper_code
 
+This directory contains the code I use to parse vcf files for information about allele frequency and polymorphism counts.
+
+## Code
+
 There are a couple main scripts here:
 
  - **bin_by_freq.py** Given a vcf file which is sorted by allele frequency, write out vcf files binned by allele frequency with a prespecified minimum number of SNPs
@@ -12,3 +16,7 @@ There are a couple main scripts here:
  - find_context.py
  - function_wrapper.py
  - modules.py
+
+## ref_files
+
+This directory contains reference files that I use for some data processing steps.  Each ref file contains an ordered list of polymorphism types under each sequence context paradigm, along with all possible subcontexts.
