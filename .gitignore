@@ -6,7 +6,7 @@ helper_code/playground
 *temp*
 *folded_counts.txt
 *chrom_counts*
-singletons_excluded
+vcf_filtration/filtered_1kg_v3
 
 # Compiled source #
 ###################

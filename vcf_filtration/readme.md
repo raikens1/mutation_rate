@@ -22,7 +22,7 @@ nc_X_regions.bed contains just the noncoding regions on the X chromosome that
 These are reference files of which 1kg individual codes come from which
 continental group and subpopulation.
 
-### filtered_vcfs_v3 (not available in repo)
+### filtered_1kg_v3 (not available in repo)
 
 This directory is not tracked by github and not available on the github repo.
 It contains all of the vcf files filtered down from the raw 1,000 genomes
