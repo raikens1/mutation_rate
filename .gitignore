@@ -7,6 +7,8 @@ helper_code/playground
 *folded_counts.txt
 *chrom_counts*
 vcf_filtration/filtered_1kg_v3
+*.RData
+*.Rhistory
 
 # Compiled source #
 ###################

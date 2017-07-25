@@ -59,6 +59,8 @@ Almost all of the analyses for this paper done in R are documented in several Rm
 
 ## Contents
 
+Each subdirectory listed here has its own readme with more detail, so be sure to take a look at those if you need to find something.
+
 ### analysis
 
 This folder contains markdown files, formatted data files, compiled pdfs and plots replicating all the analyses for my main paper and supplement.

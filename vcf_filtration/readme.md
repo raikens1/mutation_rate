@@ -4,7 +4,6 @@ This directory contains all the reference files needed to replicate the steps I 
 
 ## To Do
 
-- [ ] rename singletons_excluded to filtered_vcfs_v3
 - [ ] add a folder of shell scripts/examples
 
 ## Contents
