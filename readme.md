@@ -7,8 +7,8 @@ in polymorphism patterns across populations
 ## To Do
 
 - [ ] Make final forms of filtered vcfs available on Ben's website
-- [ ] Post Rmarkdown code, revised to run smoothly in this repo
-- [ ] Post data for R analyses
+- [ ] Revise Rmarkdown code so that it runs neatly in this repo
+- [ ] Organize, organize, organize (and don't break anything)
 - [ ] Generate shell scripts (or examples of shell scripts) demonstrating how to filter 1kg vcfs
 
 ## Pipeline
