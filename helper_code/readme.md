@@ -2,6 +2,11 @@
 
 This directory contains the code I use to parse vcf files for information about allele frequency and polymorphism counts.
 
+## To Do
+
+- [ ] Update count_contexts.py to a new version which uses biopython rather than Varun's code
+- [ ] Move bin_by_freq and Varun's code to archive.
+
 ## Code
 
 There are a couple main scripts here:

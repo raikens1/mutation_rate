@@ -2,6 +2,11 @@
 
 This directory contains the current versions of all the data files that I use for my end-of-the-line analyses in R.
 
+## To Do
+
+- [ ] update rMarkdown files in workflows so that they run in this repo
+- [ ] organize data subdirectory and populate the readme
+
 ## Contents
 
 ### data

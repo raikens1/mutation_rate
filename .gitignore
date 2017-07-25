@@ -4,11 +4,10 @@ helper_code/playground
 *archive
 *outfiles
 *temp*
+sandbox*
 *folded_counts.txt
 *chrom_counts*
 vcf_filtration/filtered_1kg_v3
-*.RData
-*.Rhistory
 
 # Compiled source #
 ###################
@@ -40,6 +39,8 @@ vcf_filtration/filtered_1kg_v3
 *.err
 *.sql
 *.sqlite
+*.RData
+*.Rhistory
 
 # OS generated files #
 ######################
