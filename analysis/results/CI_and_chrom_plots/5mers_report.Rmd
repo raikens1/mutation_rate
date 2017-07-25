@@ -1,0 +1,47 @@
+---
+title: "5mer Datagazing"
+author: "Rachael 'Rocky' Aikens, Voight Lab"
+date: "July 10, 2017"
+output: html_document
+---
+
+Need to source CI_and_chrom_plots_report.Rmd before this one.
+
+# 5mer signals of mutation rate differences
+
+Recall the following list of top variable 5mers, with known 3mer signals (GGA->A, ACC->T, AGA->A, ACT->A, ACC->S, and ACA->T) removed:
+
+```{r print sig.5mers, echo = F}
+kable(head(sig.5mers, n = 10), row.names = F, digits = 600,
+      caption = "14 most highly significant 5mers")
+```
+
+
+##TTAAA->T 
+
+The most significant novel signal of rate variation at the 5mer level is TTAAA->T, which appears elevated in Africa.  Interestingly, this polymorphism type has a much higher rate of occurance than other 3mers with the TAA->A subcontext. As we will see, this signal may be highly variable at a 7mer level.
+
+##GGCCC->T
+
+one will note that the 3mer subcontext of this mutation type appears as highly significantly variable in our original heterogeneity test.  However, we can see that this polymorphism varies in a different way than the other 5mers with the same threemer subtype.  GGCCC->T more closely resembles the profile of ACT->A and ACC->A.
+
+```{r}
+a <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "GCC->T")
+b <- CI.plot(AFR_5mer_counts, EUR_5mer_counts, EAS_5mer_counts, SAS_5mer_counts, "GGCCC->T")
+c <- subrate.lplot(AFR_5mer_counts, EUR_5mer_counts, EAS_5mer_counts, SAS_5mer_counts, "GCC->T")
+grid.arrange(a,b, ncol = 2)
+c
+```
+```{r}
+a <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "AGC->A")
+b <- CI.plot(AFR_5mer_counts, EUR_5mer_counts, EAS_5mer_counts, SAS_5mer_counts, "AAGCC->A")
+c <- subrate.lplot(AFR_5mer_counts, EUR_5mer_counts, EAS_5mer_counts, SAS_5mer_counts, "AGC->A")
+grid.arrange(a,b, ncol = 2)
+c
+```
+
+Two 7mer expansions of TTAAA->T, "TTTAAA->T" and "ATTAAAA->T" show a very different pattern of variation than the other TAA->T polymorphisms:
+
+```{r, echo = F, warning = F}
+subrate.scplot(SAS_5mer_counts, AFR_5mer_counts, "TAA->T")
+```

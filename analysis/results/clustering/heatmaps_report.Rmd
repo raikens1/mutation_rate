@@ -1,0 +1,636 @@
+---
+title: "Heatmaps"
+author: "Rachael 'Rocky' Aikens, Voight Lab"
+date: "June 19, 2017"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+A previously, when we have considered a kmer sequence context model, we have considered each of the $\frac{3 (4^{k})}{2}$ possible sequence contexts separately.  In reality, however, it is likely that the mechinisms of mutation act similarly over certain types of contexts - for example, by recognizing certain shared motifs - so that those polymorphism types appear to have similar proportions in the data. Likewise, polymorphisms that have similar profiles across the globe are likely to be affected by the same mechanisms.  For this reason, it is valuable to try and identify mutational `signals' - groups of mutations which follow the same global patterns and are thus likely to be driven my the same mechanism.
+
+# Set-Up
+
+```{r setup, message = FALSE, echo = F}
+knitr::opts_knit$set(root.dir = "C:/Users/VoightLab/Dropbox/SNP_rates/Raw_Data")
+
+# import libraries we need
+library(knitr)
+library(ggplot2)
+library(gplots)
+library(stats)
+library(readr)
+```
+
+To begin, we define the 'profile' of a given polymorphism to be its mutation rate inferred from each of the 20 nonadmixed subpopulation samples from the phase III 1,000 genomes release. The heatmaps here are constructed from normalizations of matricies which list the global rate profiles for each kmer mutation type.  These dataframes of of rate profiles for the 3mer, 5mer, and 7mer models can be found in the "data" subdirectory.
+
+```{r load data, echo = F}
+# load data
+rates.3mer <- as.matrix(read.delim("singletons_excluded/rate_profiles/rates_3mer.txt"))
+rates.5mer <- as.matrix(read.delim("singletons_excluded/rate_profiles/rates_5mer.txt"))
+rates.7mer <- as.matrix(read.delim("singletons_excluded/rate_profiles/rates_7mer.txt"))
+
+labels.3mer <- read.delim("3mer_mutations_ref.txt")
+labels.5mer <- read.delim("5mer_mutations_ref.txt")
+labels.7mer <- read.delim("7mer_mutations_ref.txt")
+
+subpops.names <- c("TSI", "IBS", "CEU", "GBR", "FIN", "STU", "ITU", "BEB", "GIH", "PJL",
+                   "ESN", "GWD", "LWK", "MSL", "YRI", "CDX", "CHB", "CHS", "JPT", "KHV")
+```
+ 
+***********************************************************
+
+\pagebreak
+
+# Methodology
+
+##Normalizing the data
+
+It is necessary to normalize the rows (mutation types) of the data or mutations will just cluster by bulk mutation rate instead of subtle differences in rate between populations. There are three ways I've written to do this:
+
+* **L1:** Set the rates of any mutation $m$ across the populations so that the total rate is 1.  This is the method Segert and I used while developing this analysis.
+
+* **Z:** Set the rates of mutation $m$ to have mean 0 and variance 1 across all populations in the dataset. NOTE: This method *does not work* if you log-transform the data because you will naturally have negative values in your dataset.
+
+* **fdiff** Normalize so that the data for mutation $m$ is fold difference relative to the mean rate for mutation $m$ over all pops. This is the reccommended method, which works well with a log transformation.
+
+```{r norm}
+# helper function that normalizes a vector by z or L1 method
+norm <- function(vec, method = c("z", "L1", "fdiff")){
+  
+  if (method == "L1"){ # normalize so vector sums to 1
+    u <- vec/sum(abs(vec))}
+  else if (method == "z"){ # normalize to mean 0, variance 1
+    u <- (vec - mean(vec))/sd(vec)}
+  else # normalize to fold change compared to mean
+    u <- vec/mean(vec)
+  return(u)
+}
+
+# normalizes a whole dataset by calling norm on each row
+norm.byrow <- function(mat, m){
+  data <- t(apply(mat,1,norm, method = m))
+  return(data)
+}
+```
+
+For the remainder of these analyses, we will use rate profiles which are normalized by fold difference.
+
+```{r normalize data, echo = F}
+norm.3mer.rates <- norm.byrow(rates.3mer, "fdiff")
+norm.5mer.rates <- norm.byrow(rates.5mer, "fdiff")
+norm.7mer.rates <- norm.byrow(rates.7mer, "fdiff")
+```
+
+##Heatmap generators
+
+This section builds some helper methods that I use to make heatmaps.  Each method minimally requires a matrix of rates across populations (data), and a boolean (logunits) for whether a log transform should be used. As a default, logunits is set to true.
+
+* **make.heatmap** makes a heatmap of the matrix passed in, and returns the row dendrogram (i.e. polymorphism clustering) produced in the process. A handy workhorse and the helper for the following functions.
+
+* **subcontext.heatmap** makes a heatmap of all of the contexts with a 3mer or 5mer subcontext listed in "muts" (a vector of strings).  Requires a reference dataframe (labels).  NOTE: all polymorphism types in "muts" must be the same kmer type.
+
+* **get.3mer.subcontext.data** is a helper function for subcontext.heatmap that finds the subset of the data with 3mer subcontexts in "muts", filters out invalid values (0 and na), and returns it.
+
+* **get.5mer.subcontext.data** has the same functionality as get.3mer.subcontext.data, but works when muts is a vector of 5mer polymorphism types.
+ 
+```{r def get subcontext data, echo = F}
+get.5mer.subcontext.data <- function(rates, muts, labels){
+  # take subset with 5mer subcontexts in muts
+  data <- subset(rates, is.element(labels$X5mer, muts))
+  
+  complete <- apply(data, 1, function(row) all(row != 0) & all(!is.na(row)))
+  data <- data[complete,]
+  
+  return(data)
+}
+
+get.3mer.subcontext.data <- function(rates, muts, labels){
+  
+  # take subset with 3mer subcontexts in muts
+  data <- subset(rates, is.element(labels$X3mer, muts))
+  
+  complete <- apply(data, 1, function(row) all(row != 0) & all(!is.na(row)))
+  data <- data[complete,]
+  
+  return(data)
+}
+```
+ 
+```{r specialized heatmap, echo = F, eval = F}
+# makes a heatmap of a matrix and returns the row dendrogram as an object
+# this function is rewritten for making figure 1 of my paper. Won't work for most other applications.
+make.heatmap <- function(data, logunits = T){
+  
+  complete <- apply(data, 1, function(row) all(row != 0) & all(!is.na(row)))
+  data <- data[complete,]
+  
+  if (logunits == T) {
+    data <- log2(data)
+  }
+  
+  dr <- hclust(dist(data))
+  dc <- hclust(dist(t(data)))
+  
+  weights.dr <- ifelse(rownames(data) == "TCC->T", yes = 10, no = 0) + ifelse(rownames(data) == "GAT->T", yes = 9, no = 0) +
+                ifelse(rownames(data) == "ACG->T", yes = 8, no = 0) + ifelse(rownames(data) == "AAC->C", yes = 7, no = 0)
+    
+  
+  dr.ordered <- reorder(as.dendrogram(dr), wts = weights.dr, agglo.FUN = mean)
+  
+  heatmap.2(data, Rowv = dr.ordered, Colv = as.dendrogram(dc),
+            trace = 'none', col=colorRampPalette(c('blue', "white", 'red'))(n = 1000),
+            density.info = 'none', key.xlab = "fold differece vs. mean\n(log base 2 scale)",
+            key.title = NA, keysize = 0.5, key.par = list(cex=0.65),
+            lhei = c(1,5.5), lwid = c(1,4))
+  return(dr)
+}
+
+```
+
+ 
+```{r def heatmaps, echo = F}
+# makes a heatmap of a matrix and returns the row dendrogram as an object
+make.heatmap <- function(data, logunits = T){
+  
+  complete <- apply(data, 1, function(row) all(row != 0) & all(!is.na(row)))
+  data <- data[complete,]
+  
+  if (logunits == T) {
+    data <- log2(data)
+  }
+  
+  dr <- hclust(dist(data))
+  dc <- hclust(dist(t(data)))
+  
+  heatmap.2(data, Rowv = as.dendrogram(dr), Colv = as.dendrogram(dc),
+            trace = 'none', col=colorRampPalette(c('blue', "white", 'red'))(n = 1000),
+            density.info = 'none', key.xlab = "",
+            key.title = NA,
+            reorderfun=function(d, w) reorder(d, w, agglo.FUN = min))
+  return(dr)
+}
+
+# makes a heatmap of all kmers with a certain set of 3mer or 5mer subcontexts
+subcontext.heatmap <- function(rates, muts, labels, logunits = T){
+  if (nchar(muts[1]) == 6){
+    data <- get.3mer.subcontext.data(rates, muts, labels)
+  } else data <- get.5mer.subcontext.data(rates, muts, labels)
+  
+  return(make.heatmap(data, logunits))
+}
+```
+
+***********************************************************
+
+\pagebreak
+
+# Mutational signals acting at the 3mer level
+
+This section provides an overview of some mutational signals that I think are boradly active at a 3mer level
+
+## *All 3mers*
+
+The most basic heatmap we can imagine making first is a clustering of all 3mer polymorphism types.  This can show us some groups of mutations which appear to be acting together at the 3mer level.  You can see a couple separate blocks of signal below:
+
+```{r 3mer heatmap, echo = F}
+dr.3.all <- make.heatmap(norm.3mer.rates)
+```
+
+There are a couple observations to make about this plot:
+
+1. TCC->T and the rest of the EUR-elevated C->T signal separates out from the other mutations first
+
+2. The second block of 3mers appears enriched in AFR compared to the rest of the continents.  Among them are three *AC->C mutations (AAC->A, GAC->C, and GTA->G) which also appear enriched in JPT and certain other East Asian subpopulations.  The other mutations in this block are all CpG transversions. Harris and Pritchard 2017 note that the proportions of these mutation types appear not to agree between 1kg and SGDP, suggesting that this may be an artifact (noteably CCG->A and ACG->G in Figure 2A of that report, and - to a lesser extent - ACG->A in Figure S22A).
+
+3. The third block of mutations appears enriched in EAS across the continent. It is comprised of two mutations, ATC->A and ACC->A which were noted as highly significant and genome wide consistent in earlier experiments, in addition to a new mutation type, GAC->T, which shares a similar profile with the first two.
+
+Beyond these first three blocks, the remainder of the data is difficult to interpret.
+
+NOTE: heatmapping all 5mers and all 7mers yeilds pretty uninterpretable results (i.e. no clear mutational blocks).
+
+## *TCC->T 7mers*
+
+Since TCC->T appears to have such a strong signature of global rate variation, one might ask what the mutational profiles are for 5mers and 7mers with this 3mer subcontext. Below we show the TCC->T subcontext expanded into 5mers, then 7mers. 
+
+```{r  GGA 5mers, echo = F}
+# plot "TCC->T" type 5mers
+dr.5.GGA <- subcontext.heatmap(norm.5mer.rates, c("TCC->T"), labels.5mer)
+```
+
+This plot is less readily interpretable, since no obvious block structure emerges.  The plot of 5mers suggests that CGGAG->A may be depleted in BEB, however this may just be noise (see CI plot of this mutation by ancestral population), and this signal does not appear as an evident pattern among 7mers. 
+
+\begin{center} 
+\includegraphics[width=3.5in]{CGGAG_A_subpops.pdf} 
+\end{center}
+
+```{r GGA 7mers, echo = F}
+# plot "TCC->T" type 7mers
+dr.7.GGA <- subcontext.heatmap(norm.7mer.rates, c("TCC->T"), labels.7mer)
+```
+
+Another block that may be interesting is the first group of 7mers that separates in the second clustering, which appears to be depleted in South Asia.
+
+Overall, these plots suggest that the elevation of TCC->T is widespread among all polymorphisms with this 3mer subtype, rather than being driven by a handful of highly variable polymorphism types at the 5mer and 7mer level.
+
+## *3mer EAS elevation*
+
+Since the first heatmap of all 3mers from this section highlighted a group of mutations (ATC->A, ACC->A, and GAC->T), which appear enriched across East Asia, it is reasonable to wonder how 5mers and 7mers with those subtypes vary.  The plot below shows all 5mers associated with this 3mer signal. Here I have turned off the log transformation because otherwise there is very little signal to noise.
+
+```{r, EAS signal 5mers, echo = F}
+dr.5.new3mer <- subcontext.heatmap(norm.5mer.rates, 
+                                   c("GAT->T", "ACC->A", "GAC->T"), labels.5mer, F)
+```
+
+This plot also does not separate into clear blocks of signals.  It would appear that the signal of enrichment in East Asia is spread across nearly all 7mers with these subcontexts, except for a few, which cluster apart first.  However, it's hard to discern at a glance which of these signals are due to random noise and which are genuine signals.  For example, one of the contexts from the first group, CGACG->T seems simply to be very rare, while the other, CGATA->T, *may* represent a real signal.
+
+\begin{center} 
+\includegraphics[width=4in]{CGACG_T.pdf}
+\end{center}
+
+\begin{center} 
+\includegraphics[width=4in]{CGATA_T.pdf} 
+\end{center}
+
+***********************************************************
+
+\pagebreak
+
+# 7mer signal - heterogeneity within East Asia
+
+Since Harris, Pritchard, and ourselves have noted heterogeneity within 3mer types among East Asian subpopulations, we might be interested in better understanding which mutations show this variability.  As we will see, it is likely that features at a higher sequence context level are driving these effects.
+
+## *3mers in EAS*
+
+It is simplest to begin with 3mers, since we know that our first heatmap of all 3mers identified a few contexts which appear to vary within East Asia.  To try and maximize our sensitivity, the heatmap below performs a similar clustering using only the data from within East Asia.
+
+```{r EAS 3mers, echo = F}
+norm.3mer.EAS <- norm.byrow(rates.3mer[,16:20], m = "fdiff")
+dr.3mer.EASonly <- make.heatmap(norm.3mer.EAS)
+```
+
+This clustering sets apart a group of mutations enriched in Japan compared to Vietnamese and Chinese from Xishuangbana. Among these are AAC->C, ATC->G, and GAC->C (the three mutations grouped in the first heatmap, CAC->C (the remaining type of *AC->C mutation), and ATA->A.
+
+## *EAS heterogeneity at a higher sequence context level* 
+
+Since the heatmap above highlights a block of mutations elevated in Japan, we'd like to visualize how this signal fluctuates at higher context levels.  First, we can start with 5mers
+
+```{r EAS 5mers, echo = F}
+# plot these JPT-enriched 3mers at a 5mer level
+norm.5mer.EAS <- norm.byrow(rates.5mer[,16:20], m = "fdiff")
+JPT3mers <- c("AAC->C", "TAC->C", "GAC->C", "CAC->C", "TAT->T")
+dr.5.JPT3mers <- subcontext.heatmap(norm.5mer.EAS, JPT3mers, labels.5mer)
+```
+
+This plot delineates a group of polymorphisms which appear enriched in JPT and depleted in CDX. What is most notable about this plot is that it demonstrates that not all 5mers with the "*AC->C" or "ATA->A" subcontexts show the same heterogeneity.  This hints that there may be some feature at a greater distance of sequence context that is driving this heterogeneity.
+
+NOTE: It is not clear whether the mutation type which separates first, CGTCC->G represents a real signal - while it is depleted in KHV, the estimated rate in KHV overlaps with the CIs for all but one (CHB) of the remaining East Asian populations:
+
+\begin{center} 
+\includegraphics[width=4in]{CGTCC_G.pdf} 
+\end{center}
+
+
+```{r EAS 7mers from 3mers, echo = F}
+# plot JPT-enriched 3mers at a 7mer level
+norm.7mer.EAS <- norm.byrow(norm.7mer.rates[,16:20], m = "fdiff")
+
+dr.7.JPT3mers <- subcontext.heatmap(norm.7mer.EAS, JPT3mers, labels.7mer)
+```
+
+Among the 7mers, the first group that separates out appears similarly promising. One interesting feature is that these groups separate out not only by JPT enrichment but by CDX depletion.  This makes sense based on the fact that rows are all normalized.  Even if the enrichment is seen to varying degrees in CHS, CHB, and JPT, this will appear as a depletion in the population which is consistently not enriched for these mutations: CDX.
+
+With subcontext.heatmap, we can visualize all 7mers which have 5mer contexts that fall into the first cluster in the first heatmap of this section.
+
+```{r 7mers from heterogeneous 5mers, echo = F}
+# 5mers in the first separated group which appears JPT elevated
+c5 <- cutree(dr.5.JPT3mers, k = 5)
+JPT5mers <- subset(names(c5), c5 == 1)
+
+# plot 7mers which have one of these 5mers as the subcontext
+dr.7.JPT5mers <- subcontext.heatmap(norm.7mer.EAS, JPT5mers, labels.7mer)
+```
+
+## Cluster properties
+
+###Overlap
+
+Now that we have a few possible clusterings of 5mers and 7mers which we believe to be enriched in JPT, we can begin to ask questions about what these polymorphism types have in common. To begin, I've constructed five clusterings: One from each heatmap in this section, plus one (7mer - 3) which is the intersection of the two 7mer clusters.
+
+```{r get JPT7mers, echo = F}
+#get JPT7mers from clustering of JPT3mers
+c7.1 <- cutree(dr.7.JPT3mers, k = 4)
+JPT7mers.1 <- subset(names(c7.1), c7.1 == 2)
+
+#get JPT7mers from clustering of JPT5mers
+c7.2 <- cutree(dr.7.JPT5mers, k = 7)
+JPT7mers.2 <- subset(names(c7.2), c7.2 == 1)
+
+JPT7mers.3 <- intersect(JPT7mers.1, JPT7mers.2)
+```
+
+  Cluster      |   Number of Polymorphisms 
+---------------|----------------------------
+ 3mer          |  `r length(JPT3mers)`         
+ 5mer          |  `r length(JPT5mers)`   
+ 7mer - 1      |  `r length(JPT7mers.1)`
+ 7mer - 2      |  `r length(JPT7mers.2)`
+ 7mer - 3      |  `r length(JPT7mers.3)`
+ 
+One interesting observation is that CAAACCC->C, the 7mer that is most highly significantly variable in heterogeneity tests across continents, can be found in all three 7mer clusterings.  
+
+### X enrichment: Chi-squared
+
+We have previously noted that CAAACCC->C and some of the substitution type with similar profiles of polymorphism counts tend to be enriched on the X chromosome.  For this reason, it would be interesting to check whether the mutation types in the clusters above are enriched on X compared to the autosomes.  A naive way of doing this involves running a Fisher's exact test for each mutation type.  I have written two functions to make this work:
+
+* **X.preprocessing**: given a count dataframe, and a list of polymorphism types, returns a dataframe with the count of those polymorphisms on X vs the autosomes.
+
+* **proptest.byrow**: given the output from X.proprocessing and a dataframe of genomewide counts, runs a fishers exact test for enrichment on X versus the autosomes for each polymorphism and returns a dataframe with p values appended.
+
+```{r def preprocessor, echo = F}
+X.preprocessing <- function(counts, gw, muts = c()){
+  
+  # if muts not specified, assume whole dataframe is used
+  if (length(muts) == 0){
+    muts <- counts$Context
+  }
+  counts <- subset(counts, is.element(counts$Context, muts))
+  autosomes <-counts$Count-counts$chrX
+  
+  # construct data frame
+  result <- data.frame(matrix(ncol=3,nrow=length(counts$Context)))
+  colnames(result) <- c("Context", "Autosomes", "X")
+  result$Context <- counts$Context
+  result$Autosomes <- autosomes
+  result$X <- counts$chrX
+  
+  # add gw_sites to data
+  result$Autosomal_sites <- rep(0, length(result$Context))
+  result$X_sites <- rep(0, length(result$Context))
+  
+  for (i in 1:length(result$Context)){
+    mut <- as.character(result$Context[i])
+    context <- substr(mut, 1, nchar(mut)-3)
+    j <- which(gw$Context == context)
+    result$Autosomal_sites[i] <- gw$GW_total[j]- gw$X[j]
+    result$X_sites[i] <- gw$X[j]
+  }
+
+  return(result)
+}
+```
+
+```{r def proptest.byrow, echo = F}
+proptest.byrow <- function(counts, gw, muts = c(), method = "fisher"){
+  data <- X.preprocessing(counts, gw, muts)
+  data$p <- rep(1, length(data$Context))
+  data$x.enrichment <- rep(1, length(data$Context))
+  
+  for (i in 1:length(data$Context)){
+    c.a <- c(data$X[i], data$Autosomes[i])
+    c.b <- c(data$X_sites[i], data$Autosomal_sites[i])
+    
+    prop.a <- c.a[2]/c.b[2]
+    prop.x <- c.a[1]/c.b[1]
+    alpha <- prop.x/prop.a
+    data$x.enrichment[i]<- alpha
+    
+    if (method == "fisher"){
+      data$p[i]<- fisher.test(rbind(c.a, c.b))$p    
+    }
+    else {data$p[i]<- chisq.test(rbind(c.a, c.b))$p.value}
+  }
+  return(data)
+}
+```
+
+```{r upload data, echo = F}
+counts.JPT.7mer <- read.delim("singletons_excluded/subpops/7mer/JPT_EAS_7mer_counts.txt")
+counts.JPTCHBCHS.7mer <- read.delim("singletons_excluded/subpops/7mer/JPTCHSCHB_EAS_7mer_counts.txt")
+gw.7mer <- read.delim("gw_counts/gw_7mer_counts.txt")
+counts.JPT.5mer <- read.delim("singletons_excluded/subpops/5mer/JPT_EAS_5mer_counts.txt")
+gw.5mer <- read.delim("gw_counts/gw_5mer_counts.txt")
+counts.JPT.3mer <- read.delim("singletons_excluded/subpops/3mer/JPT_EAS_3mer_counts.txt")
+gw.3mer <- read.delim("gw_counts/gw_3mer_counts.txt")
+```
+
+Since this signal appears to be strongest in Japan, I first chose to use only the data from JPT.  The table below shows a test for X enrichment in those 3mers which Harris and Pritchard have pointed out as heterogeneous in EUR and enriched in JPT.
+
+```{r, run proptest, echo = F}
+p.3mer <- proptest.byrow(counts.JPT.3mer, gw.3mer, JPT3mers, method = "chi")
+kable(p.3mer, caption = "X enrichment among 3mer cluster")
+```
+
+It may seem surprising that GAC->C and TAC->C appear depleted on the X chromosome.  In fact, this is not uncommon.  X is depleted for polymorphisms in all populations, as we would expect since there are fewer X chromosomes in every population and so they would accumulate less genetic variation.
+
+The next section will set up a binomial test which may be more sensitive to this particular issue.
+
+### Binomial test
+
+One important problem with the analysis above is that it assumes under the null hypothesis that the probability of observing a polymorphism on the X chromosome is equal to the probability of oberving a polymorphism on an Autosome. Instead, it is more reasonable to expect that fewer polymorphisms will be observed on the X chromosome than an equally sized autosome, even when the mutation rate is the same between both chromosomes.
+
+* Since males lack an X chromosome, there are fewer X's than autosomes in any given population that is not 100% female.  Recall that for autosomes in a diploid population, $$\theta = 4N_e\mu.$$ For X chromosomes, the left hand side of this equation must be smaller even when $\mu$ is the same, thus fewer polymorphisms should be expected.
+
+* For related reasons, in a sample of mixed sexes, it must be true that we are sequencing fewer X chromosomes than any given autosome, which means that our power to detect genetic variation is reduced.  Again, this will cause us to expect fewer polymorphisms to be observed on X than an autosome with the same size and mutation rate.
+
+Based on the information above, a simple chi squared test is likely to give us a high rate of false negatives when we test for X enrichment.  Instead, we can set up a binomial hypothesis test as follows.
+
+Suppose we are interested in a specific polymorphism type, $m$. Under the null hypothesis, the ratio between polymorphisms on X and the Autosomes is the same for $m$ as for all other mutations.  Therefore, one way to estimate $p_0$ the null-hypothesis probability of observing an $m$-type polymorphism at a given site on $X$, is:
+
+$$p_0 = \alpha p^A_m,$$ where
+$$\alpha = \frac{\frac{\text{polymorphsims on X}}{\text{sites on X}}}{\frac{\text{polymorphisms on Autosomes}}{\text{sites on Autosomes}}}$$
+for all of the data, and 
+$$p^A_m = \frac{\text{m polymorphisms on A}}{\text{m sites on A}}.$$
+
+We would then like to test the hypotheses:
+
+$$H_0: p = p_0 \qquad H_1: p \neq p_0$$
+```{r, echo = F}
+binomtest.byrow <- function(counts, gw, muts = c()){
+  data <- X.preprocessing(counts, gw, c())
+  data$alpha <- rep(1, length(data$Context))
+  data$p.0 <- rep(0, length(data$Context))
+  data$p.MLE <- rep(0, length(data$Context))
+  data$p <- rep(1, length(data$Context))
+  
+  muts.X <- sum(data$X)
+  sites.X <- sum(data$X_sites)
+  muts.A <- sum(data$Autosomes)
+  sites.A <- sum(data$Autosomal_sites)
+  
+  for (i in 1:length(data$Context)){
+    # remove data for ith polymorphism type
+    #m.X <- muts.X - data$X[i]
+    #s.X <- sites.X - data$X_sites[i]
+    #m.A <- muts.A - data$Autosomes[i]
+    #s.A <- sites.A - data$Autosomal_sites[i]
+    
+    # estimate parameters and run test
+    alpha <- (muts.X/sites.X)/(muts.A/sites.A)
+    data$alpha[i] <- alpha
+    p.0 <- alpha*(data$Autosomes[i]/data$Autosomal_sites[i])
+    data$p.0[i] <- p.0
+    data$p.MLE[i] <- data$X[i]/data$X_sites[i]
+    
+    data$p[i] <- binom.test(data$X[i], n = data$X_sites[i], p = p.0)$p.value
+    
+    if (data$Autosomes[i]< 20){
+      data$p[i] <- 1
+    }
+    
+  }
+  if (length(muts)!=0){
+    data <- subset(data, is.element(data$Context, muts))
+  }
+  return(data)
+}
+```
+
+```{r, echo = F}
+p.3mer <- binomtest.byrow(counts.JPT.3mer, gw.3mer, JPT3mers)
+kable(p.3mer, caption = "X enrichment among 3mer cluster")
+```
+
+As you can see in the table above, in JPT, the proportion of polymorphic sites on X is `r p.3mer$alpha[1]` the proportion of polymorphic sites on Autosomes.  None of the tests above are nominally significant, showing that this signal is not expecially strong at the 3mer level.
+
+It would be natural to run such a test for the 5mer and 7mer polymorphism lists we've developed.  However, upon closer inspection, I've found that the vast majority of 5mers and 7mers in these groupings are not observed enough times on the X chromosome in Japan for a statistical test to be informative (i.e. many mutation types have 0-3 polymorphisms present in Japan on X). Below, you can see an example:
+
+```{r, echo = F}
+p.5mer <- binomtest.byrow(counts.JPT.5mer, gw.5mer, JPT5mers)
+kable(head(p.5mer, n = 10), caption = "X enrichment among 5mer cluster (first ten 5mers)")
+```
+
+We find only two polymorphisms significant at fdr < 0.1:
+
+```{r, echo = F}
+p.5mer$fdr <- p.adjust(p.5mer$p, "fdr")
+kable(subset(p.5mer[-c(2:6)], p.5mer$fdr < 0.1), row.names = F, caption = "5mers significantly enriched on X")
+```
+
+```{r, echo = F, eval = F}
+p.7mer.1 <- binomtest.byrow(counts.JPT.7mer, gw.7mer, JPT7mers.1)
+p.7mer.1$fdr <- p.adjust(p.7mer.1$p, "fdr")
+kable(subset(p.7mer.1[-c(2:6)], p.7mer.1$fdr < 0.1), row.names = F, caption = "7mers significantly enriched on X")
+```
+
+As you can see, some polymorphism types are found in large enough numbers for hypothesis testing, and some among those are significant. However, there are not many more significant results than we would expect by random chance, and many of the polymorphism types are not observed in sufficient numbers for a statistical test to be well-powered. Clearly, we are having issues with power.  One solution is to pool across clustering groups.
+```{r def Chi.bycluster, echo = F}
+# given a dendrogram, run a pooled test for X enrichment 
+# excluding contexts in "exclude"
+chi.bycluster <- function(data, gw, dr, k, n, exclude = c()){
+  # get cluster members
+  members <- cutree(dr, k = k)
+  muts <- subset(names(members), members == n)
+  
+  # remove those to be excluded
+  muts <- subset(muts, !is.element(muts, exclude))
+  data <- X.preprocessing(data, gw, c())
+  
+  # set up table and test
+  muts.A <- sum(data$Autosomes)
+  muts.X <- sum(data$X)
+  sites.A <- sum(data$Autosomal_sites)
+  sites.X <- sum(data$X_sites)
+  alpha <- (muts.X/sites.X)/(muts.A/sites.A)
+  
+  m.A <- sum(subset(data$Autosomes, is.element(data$Context, muts)))
+  m.X <- sum(subset(data$X, is.element(data$Context, muts)))
+  s.A <- sum(subset(data$Autosomal_sites, is.element(data$Context, muts)))
+  s.X <- sum(subset(data$X_sites, is.element(data$Context, muts)))
+  
+  p.0 <- alpha*(m.A/s.A)
+  p.MLE <- m.X/s.X
+  
+  result <- c(binom.test(m.X, s.X, p.0)$p.value, alpha, p.0, p.MLE)
+  
+  names(result)<- c("Chisquared p", "alpha", "P_0", "MLE")
+  
+  return(result)
+}
+
+# given a list of contexts, run a pooled test for X enrichment 
+# excluding contexts in "exclude"
+chi.bysubset <- function(data, gw, muts = c()){
+  data <- X.preprocessing(data, gw, c())
+  
+  # set up table and test
+  muts.A <- sum(data$Autosomes)
+  muts.X <- sum(data$X)
+  sites.A <- sum(data$Autosomal_sites)
+  sites.X <- sum(data$X_sites)
+  alpha <- (muts.X/sites.X)/(muts.A/sites.A)
+  
+  m.A <- sum(subset(data$Autosomes, is.element(data$Context, muts)))
+  m.X <- sum(subset(data$X, is.element(data$Context, muts)))
+  s.A <- sum(subset(data$Autosomal_sites, is.element(data$Context, muts)))
+  s.X <- sum(subset(data$X_sites, is.element(data$Context, muts)))
+  
+  p.0 <- alpha*(m.A/s.A)
+  p.MLE <- m.X/s.X
+  
+  result <- c(binom.test(m.X, s.X, p.0)$p.value, alpha, p.0, p.MLE)
+  
+  names(result)<- c("Chisquared p", "alpha", "P_0", "MLE")
+  
+  return(result)
+}
+```
+
+```{r}
+#3mer groups
+chi.bycluster(data = counts.JPT.3mer, gw = gw.3mer,dr = dr.3mer.EASonly, k = 2, n = 1, exclude = c()) # p = 0.97, non-JPT-enriched group
+chi.bysubset(data = counts.JPT.3mer, gw = gw.3mer, muts = JPT3mers) # p = 0.2, JPT enriched group
+
+#5mer groups
+chi.bycluster(data = counts.JPT.5mer, gw = gw.5mer,dr = dr.5.JPT3mers, k = 5, n = 1, exclude = c()) # p = 0.076
+
+#7mer groups
+chi.bycluster(data = counts.JPT.7mer, gw = gw.7mer,dr = dr.7.JPT3mers, k = 4, n = 2) # p = 0.15
+chi.bycluster(data = counts.JPT.7mer, gw = gw.7mer,dr = dr.7.JPT3mers, k = 4, n = 2, # p = 0.65
+              exclude = c("CAAACCC->C", "CCCACAG->C", "TTTATTT->T"))
+chi.bycluster(data = counts.JPT.7mer, gw = gw.7mer,dr = dr.7.JPT5mers, k = 7, n = 1) # p = 0.003
+chi.bycluster(data = counts.JPT.7mer, gw = gw.7mer,dr = dr.7.JPT5mers, k = 7, n = 1, # p = 0.36
+              exclude = c("CAAACCC->C", "CCCACAG->C", "TTTATTT->T"))
+chi.bysubset(counts.JPT.7mer, gw.7mer, JPT7mers.3) # p = 0.000044
+muts.7.filtered <- subset(JPT7mers.3, !is.element(JPT7mers.3, c("CAAACCC->C", "CCCACAG->C", "TTTATTT->T")))
+chi.bysubset(counts.JPT.7mer, gw.7mer, muts.7.filtered) # p = 0.49
+```
+
+### Polymorphisms highly enriched on X
+
+Since we have all these pieces set up, I wanted to run the following test on X:
+
+```{r}
+# 3mers 
+x.3mers <- binomtest.byrow(counts.JPT.3mer, gw.3mer)
+kable(subset(x.3mers, x.3mers$p < 0.05/length(x.3mers$Context)))
+
+# 5mers
+x.5mers <- binomtest.byrow(counts.JPT.5mer, gw.5mer)
+kable(subset(x.5mers, x.5mers$p < 0.05/length(x.5mers$Context)))
+
+# 7mers
+x.7mers <- binomtest.byrow(counts.JPTCHBCHS.7mer, gw.7mer)
+kable(subset(x.7mers, x.7mers$p < 0.05/length(x.7mers$Context)))
+```
+
+
+# Future directions
+
+Additionally, CAAACCC->C, the very strong signature of heterogeneity in East Asia that we identified in our first analysis, is enriched on the X chromosome.  Two simple experiments come out of this example:
+
+1. If we remove the X chromosome, do we see the same signal?
+
+2. Among the mutations that we've identified as interesting in this analysis, how many are X enriched? Is this more than we would expect from random chance (Binomial(n, p = 0.05))?
+
+**********************************************************
+
+#Weaknesses
+
+There are a few broad weaknesses to this analysis
+
+1. There is no correction for uncertainty.  This causes mutation types with relatively few observations (and thus, usually a high variance in rate across populations), to obscure real results.
+
+2. Plotting more than a couple hundred polymorphism types tends to get messy, fast.  This makes it harder to make sense of patterns at higher sequence context levels (although, for the moment, it's the best we've got).
+
+3. The default distance function for creating these clusterings is Euclidean.  For our purposes, it might make more sense to use Mahattan distance.

@@ -1,9 +1,7 @@
 # Custom files and directories #
 ################################
-helper_code/archive
 helper_code/playground
 *archive
-gw_context_counts/archive
 *outfiles
 *temp*
 *folded_counts.txt
@@ -30,7 +28,7 @@ singletons_excluded
 *.rar
 *.tar
 *.zip
-#*.gz 
+*.gz
 
 # Logs and databases #
 ######################

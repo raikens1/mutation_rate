@@ -15,8 +15,8 @@ Sorts the list into bins of size at least m, based on allele frequency
 USEAGE: bin_by_freq.py SNPfile.gz m
 """
 
-# TODO: 
-# [] add usage printing
+# TODO:
+# - [ ] add usage printing
 
 def main():
 	readSNPs(argv[1], int(argv[2]))
