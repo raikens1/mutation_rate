@@ -5,7 +5,7 @@ This directory contains the current versions of all the data files that I use fo
 ## To Do
 
 - [ ] update rMarkdown files in workflows so that they run in this repo
-- [ ] organize data subdirectory and populate the readme
+- [ ] populate the readme in the data subdirectory
 
 ## Contents
 
