@@ -55,7 +55,7 @@ The only other input type I've used is the rate matrix format, which is needed t
 
 ### 5. Analysis in R
 
-Almost all of the analyses for this paper done in R are documented in several Rmarkdown analyses.  These can be found in the 'analysis/results' directory.
+Almost all of the analyses for this paper done in R are documented in a handful of Rmarkdown files.  These can be found in the 'analysis/workflows_finished' directory.
 
 ## Contents
 
@@ -67,7 +67,7 @@ This folder contains markdown files, formatted data files, compiled pdfs and plo
 
 ### helper_code
 
-The majority of my workhorse python and shell scripts can be found here. The subdirectory 'ref_files' contains text files for 3mer, 5mer, and 7mer, detailing the subcontexts that correspond to each possible polymorphism/mutation type.
+The majority of my workhorse python and shell scripts can be found here. They help parse through filtered .vcf files to extract information that I analyze downstream in R (see the 'analysis' directory)
 
 ### vcf_filtration
 

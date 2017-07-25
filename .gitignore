@@ -18,6 +18,7 @@ vcf_filtration/filtered_1kg_v3
 *.exe
 *.o
 *.so
+*.pyc
 
 # Packages #
 ############
