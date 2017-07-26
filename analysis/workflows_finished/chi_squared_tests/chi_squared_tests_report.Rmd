@@ -3,8 +3,9 @@ title: "Chi Squared Tests for Heterogeneity"
 author: "Rachael 'Rocky' Aikens, Voight Lab"
 date: "June 20, 2017"
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
+  word_document: default
 ---
 
 # Set Up
@@ -678,30 +679,28 @@ The following table summarizes the numbers of significant results from this sect
 p.3mer <- p.3mer[order(p.3mer$p),]
 sig.3mers <- subset(p.3mer, p.3mer$p < 0.05/96)
 
-setwd("../workflows_finished/unordered_p")
+setwd("../workflows_finished/chi_squared_tests/results/")
 
 # significant results
-write.table(sig.3mers, "significant_3mers.txt", quote = F, sep = "\t", row.names = F)
-write.table(new.5mers, "significant_new_5mers.txt", quote = F, sep = "\t", row.names = F)
-write.table(new.7mers, "significant_new_7mers.txt", quote = F, sep = "\t", row.names = F)
+write.table(sig.3mers, "unordered_p/significant_3mers.txt", quote = F, sep = "\t", row.names = F)
+write.table(new.5mers, "unordered_p/significant_new_5mers.txt", quote = F, sep = "\t", row.names = F)
+write.table(new.7mers, "unordered_p/significant_new_7mers.txt", quote = F, sep = "\t", row.names = F)
 
 # fdr
-write.table(fdr.3mer, "fdr_3mers.txt", quote = F, sep = "\t", row.names = F)
-write.table(fdr.5mer, "fdr_5mers.txt", quote = F, sep = "\t", row.names = F)
-write.table(fdr.7mer, "fdr_7mers.txt", quote = F, sep = "\t", row.names = F)
-
-setwd("../ordered_p")
+write.table(fdr.3mer, "unordered_p/fdr_3mers.txt", quote = F, sep = "\t", row.names = F)
+write.table(fdr.5mer, "unordered_p/fdr_5mers.txt", quote = F, sep = "\t", row.names = F)
+write.table(fdr.7mer, "unordered_p/fdr_7mers.txt", quote = F, sep = "\t", row.names = F)
 
 o.p.3mer <- o.p.3mer[order(o.p.3mer$p),]
 o.sig.3mers <- subset(o.p.3mer, o.p.3mer$p < 0.05/96)
 
 # significant results
-write.table(o.sig.3mers, "o_significant_3mers.txt", quote = F, sep = "\t", row.names = F)
-write.table(o.new.5mers, "o_significant_new_5mers.txt", quote = F, sep = "\t", row.names = F)
-write.table(o.new.7mers, "o_significant_new_7mers.txt", quote = F, sep = "\t", row.names = F)
+write.table(o.sig.3mers, "ordered_p/o_significant_3mers.txt", quote = F, sep = "\t", row.names = F)
+write.table(o.new.5mers, "ordered_p/o_significant_new_5mers.txt", quote = F, sep = "\t", row.names = F)
+write.table(o.new.7mers, "ordered_p/o_significant_new_7mers.txt", quote = F, sep = "\t", row.names = F)
 
 # fdr
-write.table(o.fdr.3mer, "o_fdr_3mers.txt", quote = F, sep = "\t", row.names = F)
-write.table(o.fdr.5mer, "o_fdr_5mers.txt", quote = F, sep = "\t", row.names = F)
-write.table(o.fdr.7mer, "o_fdr_7mers.txt", quote = F, sep = "\t", row.names = F)
+write.table(o.fdr.3mer, "ordered_p/o_fdr_3mers.txt", quote = F, sep = "\t", row.names = F)
+write.table(o.fdr.5mer, "ordered_p/o_fdr_5mers.txt", quote = F, sep = "\t", row.names = F)
+write.table(o.fdr.7mer, "ordered_p/o_fdr_7mers.txt", quote = F, sep = "\t", row.names = F)
 ```

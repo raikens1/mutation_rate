@@ -1,66 +1,65 @@
 library(readr)
-setwd("C:/Users/VoightLab/Dropbox/SNP_rates/Raw_Data/singletons_excluded/subpops/5mer/")
-#setwd("C:/Users/Rocky/Dropbox/SNP_rates/Data/singletons_excluded/subpops/5mer")
 
-#just some quick code to help me upload a bunch of subpop files
+# just some quick code to help me upload a bunch of subpop files
+# meant to be run from the 'data' directory
 
-#EUROPE
-TSI_EUR_5mer_counts <- read_delim("TSI_EUR_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+# EUROPE
+TSI_EUR_5mer_counts <- read_delim("subpops/5mer/TSI_EUR_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
 
-IBS_EUR_5mer_counts <- read_delim("IBS_EUR_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+IBS_EUR_5mer_counts <- read_delim("subpops/5mer/IBS_EUR_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
 
-CEU_EUR_5mer_counts <- read_delim("CEU_EUR_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+CEU_EUR_5mer_counts <- read_delim("subpops/5mer/CEU_EUR_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
 
-GBR_EUR_5mer_counts <- read_delim("GBR_EUR_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+GBR_EUR_5mer_counts <- read_delim("subpops/5mer/GBR_EUR_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
 
-FIN_EUR_5mer_counts <- read_delim("FIN_EUR_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+FIN_EUR_5mer_counts <- read_delim("subpops/5mer/FIN_EUR_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
 
-#SOUTH ASIA
-STU_SAS_5mer_counts <- read_delim("STU_SAS_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+# SOUTH ASIA
+STU_SAS_5mer_counts <- read_delim("subpops/5mer/STU_SAS_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
 
-ITU_SAS_5mer_counts <- read_delim("ITU_SAS_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+ITU_SAS_5mer_counts <- read_delim("subpops/5mer/ITU_SAS_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
 
-BEB_SAS_5mer_counts <- read_delim("BEB_SAS_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+BEB_SAS_5mer_counts <- read_delim("subpops/5mer/BEB_SAS_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
 
-GIH_SAS_5mer_counts <- read_delim("GIH_SAS_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+GIH_SAS_5mer_counts <- read_delim("subpops/5mer/GIH_SAS_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
 
-PJL_SAS_5mer_counts <- read_delim("PJL_SAS_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+PJL_SAS_5mer_counts <- read_delim("subpops/5mer/PJL_SAS_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
 
-#AFRICA
-ESN_AFR_5mer_counts <- read_delim("ESN_AFR_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+# AFRICA
+ESN_AFR_5mer_counts <- read_delim("subpops/5mer/ESN_AFR_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
 
-MSL_AFR_5mer_counts <- read_delim("MSL_AFR_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+MSL_AFR_5mer_counts <- read_delim("subpops/5mer/MSL_AFR_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
 
-GWD_AFR_5mer_counts <- read_delim("GWD_AFR_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+GWD_AFR_5mer_counts <- read_delim("subpops/5mer/GWD_AFR_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
 
-LWK_AFR_5mer_counts <- read_delim("LWK_AFR_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+LWK_AFR_5mer_counts <- read_delim("subpops/5mer/LWK_AFR_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
 
-YRI_AFR_5mer_counts <- read_delim("YRI_AFR_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+YRI_AFR_5mer_counts <- read_delim("subpops/5mer/YRI_AFR_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
 
-#EAST ASIA
-CHB_EAS_5mer_counts <- read_delim("CHB_EAS_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+# EAST ASIA
+CHB_EAS_5mer_counts <- read_delim("subpops/5mer/CHB_EAS_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
 
-JPT_EAS_5mer_counts <- read_delim("JPT_EAS_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+JPT_EAS_5mer_counts <- read_delim("subpops/5mer/JPT_EAS_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
 
-CHS_EAS_5mer_counts <- read_delim("CHS_EAS_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+CHS_EAS_5mer_counts <- read_delim("subpops/5mer/CHS_EAS_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
 
-CDX_EAS_5mer_counts <- read_delim("CDX_EAS_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+CDX_EAS_5mer_counts <- read_delim("subpops/5mer/CDX_EAS_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
 
-KHV_EAS_5mer_counts   <- read_delim("KHV_EAS_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+KHV_EAS_5mer_counts <- read_delim("subpops/5mer/KHV_EAS_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
 
-#AMERICA
+# AMERICA
 
-ACB_AMR_5mer_counts   <- read_delim("ACB_AMR_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+ACB_AMR_5mer_counts <- read_delim("subpops/5mer/ACB_AMR_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
 
-ASW_AMR_5mer_counts   <- read_delim("ASW_AMR_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+ASW_AMR_5mer_counts <- read_delim("subpops/5mer/ASW_AMR_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
 
-CLM_AMR_5mer_counts   <- read_delim("CLM_AMR_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+CLM_AMR_5mer_counts <- read_delim("subpops/5mer/CLM_AMR_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
 
-MXL_AMR_5mer_counts   <- read_delim("MXL_AMR_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+MXL_AMR_5mer_counts <- read_delim("subpops/5mer/MXL_AMR_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
 
-PEL_AMR_5mer_counts   <- read_delim("PEL_AMR_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+PEL_AMR_5mer_counts <- read_delim("subpops/5mer/PEL_AMR_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
 
-PUR_AMR_5mer_counts   <- read_delim("PUR_AMR_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+PUR_AMR_5mer_counts <- read_delim("subpops/5mer/PUR_AMR_5mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
 
 subpops.5mer.ancestral <- list(LWK_AFR_5mer_counts, ESN_AFR_5mer_counts, YRI_AFR_5mer_counts, MSL_AFR_5mer_counts, GWD_AFR_5mer_counts, 
                                TSI_EUR_5mer_counts, IBS_EUR_5mer_counts, GBR_EUR_5mer_counts, CEU_EUR_5mer_counts, FIN_EUR_5mer_counts,

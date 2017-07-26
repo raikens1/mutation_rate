@@ -4,12 +4,6 @@ This repo contains all of the code and essential raw data
 for replicating the central results of my report on differences
 in polymorphism patterns across populations
 
-## To Do
-
-- [ ] Make final forms of filtered vcfs available on Ben's website
-- [ ] Revise Rmarkdown code so that it runs neatly in this repo
-- [ ] Generate shell scripts (or examples of scripts) showing how I filter vcfs
-
 ## Pipeline
 
 Here is a basic walkthrough of my workflow for filtering vcfs and arriving at

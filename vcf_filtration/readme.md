@@ -2,10 +2,6 @@
 
 This directory contains all the reference files needed to replicate the steps I take to filter the source vcfs from 1kg.
 
-## To Do
-
-- [ ] add a folder of shell scripts/examples
-
 ## Contents
 
 ### nc_bedfiles
