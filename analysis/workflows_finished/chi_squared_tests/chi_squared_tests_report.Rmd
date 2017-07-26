@@ -13,9 +13,7 @@ output:
 library(knitr)
 
 # set wd
-knitr::opts_knit$set(root.dir = '../../Raw_Data/singletons_excluded')
-
-wd <- getwd()
+knitr::opts_knit$set(root.dir = '../../data')
 
 # color vector so that plot colorings match Harris
 h.colors <- c("dark blue", "magenta", "purple", "forest green", "#0099FF", "red")
@@ -677,9 +675,10 @@ The following table summarizes the numbers of significant results from this sect
 ```{r save data, echo = F, eval = T}
 # this is just some helper code that I can run to re-save the results from this analysis
 
-setwd('C:/Users/VoightLab/Dropbox/SNP_rates/Analyses/chi_squared_tests/results/ordered_p')
 p.3mer <- p.3mer[order(p.3mer$p),]
 sig.3mers <- subset(p.3mer, p.3mer$p < 0.05/96)
+
+setwd("../workflows_finished/unordered_p")
 
 # significant results
 write.table(sig.3mers, "significant_3mers.txt", quote = F, sep = "\t", row.names = F)
@@ -691,7 +690,7 @@ write.table(fdr.3mer, "fdr_3mers.txt", quote = F, sep = "\t", row.names = F)
 write.table(fdr.5mer, "fdr_5mers.txt", quote = F, sep = "\t", row.names = F)
 write.table(fdr.7mer, "fdr_7mers.txt", quote = F, sep = "\t", row.names = F)
 
-setwd('C:/Users/VoightLab/Dropbox/SNP_rates/Analyses/chi_squared_tests/results/ordered_p')
+setwd("../ordered_p")
 
 o.p.3mer <- o.p.3mer[order(o.p.3mer$p),]
 o.sig.3mers <- subset(o.p.3mer, o.p.3mer$p < 0.05/96)

@@ -8,13 +8,12 @@ in polymorphism patterns across populations
 
 - [ ] Make final forms of filtered vcfs available on Ben's website
 - [ ] Revise Rmarkdown code so that it runs neatly in this repo
-- [ ] Finish readme in analysis/data directory
 - [ ] Generate shell scripts (or examples of scripts) showing how I filter vcfs
 
 ## Pipeline
 
 Here is a basic walkthrough of my workflow for filtering vcfs and arriving at
-final results
+final results.
 
 ### 1. Downloading raw data from 1kg
 
@@ -75,4 +74,4 @@ This directory contains reference files and shell scripts used to filter source 
 
 ## A developer note for Rocky
 
-I do the work for this analysis on the cluster and on my local machine.  Certain .gitignore files and directories on both of these machines may be relevant for my purposes but not synced to the github because they aren't relevant to the main manuscript or supplement, or they are unfinished, outdated or too large.  In 'helper_code' and 'vcf_filtration,' these files can be found on the cluster.  In 'analysis,' these files are found on the Voightlab machine. 
+I do the work for this analysis on the cluster and on my local machine.  Certain .gitignore files and directories on both of these machines may be relevant for my purposes but not synced to the github because they aren't relevant to the main manuscript or supplement, or they are unfinished, outdated or too large.  In 'helper_code' and 'vcf_filtration,' these files can be found on the cluster.  In 'analysis,' these files are found on the Voightlab machine.
