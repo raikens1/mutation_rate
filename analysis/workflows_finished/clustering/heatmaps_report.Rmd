@@ -3,8 +3,8 @@ title: "Heatmaps"
 author: "Rachael 'Rocky' Aikens, Voight Lab"
 date: "June 19, 2017"
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 ---
 
 A previously, when we have considered a kmer sequence context model, we have considered each of the $\frac{3 (4^{k})}{2}$ possible sequence contexts separately.  In reality, however, it is likely that the mechinisms of mutation act similarly over certain types of contexts - for example, by recognizing certain shared motifs - so that those polymorphism types appear to have similar proportions in the data. Likewise, polymorphisms that have similar profiles across the globe are likely to be affected by the same mechanisms.  For this reason, it is valuable to try and identify mutational `signals' - groups of mutations which follow the same global patterns and are thus likely to be driven my the same mechanism.
@@ -12,7 +12,7 @@ A previously, when we have considered a kmer sequence context model, we have con
 # Set-Up
 
 ```{r setup, message = FALSE, echo = F}
-knitr::opts_knit$set(root.dir = "C:/Users/VoightLab/Dropbox/SNP_rates/Raw_Data")
+knitr::opts_knit$set(root.dir = '../../data')
 
 # import libraries we need
 library(knitr)
@@ -26,13 +26,13 @@ To begin, we define the 'profile' of a given polymorphism to be its mutation rat
 
 ```{r load data, echo = F}
 # load data
-rates.3mer <- as.matrix(read.delim("singletons_excluded/rate_profiles/rates_3mer.txt"))
-rates.5mer <- as.matrix(read.delim("singletons_excluded/rate_profiles/rates_5mer.txt"))
-rates.7mer <- as.matrix(read.delim("singletons_excluded/rate_profiles/rates_7mer.txt"))
+rates.3mer <- as.matrix(read.delim("rate_profiles/rates_3mer.txt"))
+rates.5mer <- as.matrix(read.delim("rate_profiles/rates_5mer.txt"))
+rates.7mer <- as.matrix(read.delim("rate_profiles/rates_7mer.txt"))
 
-labels.3mer <- read.delim("3mer_mutations_ref.txt")
-labels.5mer <- read.delim("5mer_mutations_ref.txt")
-labels.7mer <- read.delim("7mer_mutations_ref.txt")
+labels.3mer <- read.delim("ref_files/3mer_mutations_ref.txt")
+labels.5mer <- read.delim("ref_files/5mer_mutations_ref.txt")
+labels.7mer <- read.delim("ref_files/7mer_mutations_ref.txt")
 
 subpops.names <- c("TSI", "IBS", "CEU", "GBR", "FIN", "STU", "ITU", "BEB", "GIH", "PJL",
                    "ESN", "GWD", "LWK", "MSL", "YRI", "CDX", "CHB", "CHS", "JPT", "KHV")
@@ -405,12 +405,12 @@ proptest.byrow <- function(counts, gw, muts = c(), method = "fisher"){
 ```
 
 ```{r upload data, echo = F}
-counts.JPT.7mer <- read.delim("singletons_excluded/subpops/7mer/JPT_EAS_7mer_counts.txt")
-counts.JPTCHBCHS.7mer <- read.delim("singletons_excluded/subpops/7mer/JPTCHSCHB_EAS_7mer_counts.txt")
+counts.JPT.7mer <- read.delim("subpops/7mer/JPT_EAS_7mer_counts.txt")
+counts.JPTCHBCHS.7mer <- read.delim("subpops/7mer/JPTCHSCHB_EAS_7mer_counts.txt")
 gw.7mer <- read.delim("gw_counts/gw_7mer_counts.txt")
-counts.JPT.5mer <- read.delim("singletons_excluded/subpops/5mer/JPT_EAS_5mer_counts.txt")
+counts.JPT.5mer <- read.delim("subpops/5mer/JPT_EAS_5mer_counts.txt")
 gw.5mer <- read.delim("gw_counts/gw_5mer_counts.txt")
-counts.JPT.3mer <- read.delim("singletons_excluded/subpops/3mer/JPT_EAS_3mer_counts.txt")
+counts.JPT.3mer <- read.delim("subpops/3mer/JPT_EAS_3mer_counts.txt")
 gw.3mer <- read.delim("gw_counts/gw_3mer_counts.txt")
 ```
 
@@ -445,7 +445,7 @@ $$p^A_m = \frac{\text{m polymorphisms on A}}{\text{m sites on A}}.$$
 We would then like to test the hypotheses:
 
 $$H_0: p = p_0 \qquad H_1: p \neq p_0$$
-```{r, echo = F}
+```{r def binomtest, echo = F}
 binomtest.byrow <- function(counts, gw, muts = c()){
   data <- X.preprocessing(counts, gw, c())
   data$alpha <- rep(1, length(data$Context))
@@ -486,7 +486,7 @@ binomtest.byrow <- function(counts, gw, muts = c()){
 }
 ```
 
-```{r, echo = F}
+```{r x enriched 3mers, echo = F}
 p.3mer <- binomtest.byrow(counts.JPT.3mer, gw.3mer, JPT3mers)
 kable(p.3mer, caption = "X enrichment among 3mer cluster")
 ```
@@ -495,19 +495,19 @@ As you can see in the table above, in JPT, the proportion of polymorphic sites o
 
 It would be natural to run such a test for the 5mer and 7mer polymorphism lists we've developed.  However, upon closer inspection, I've found that the vast majority of 5mers and 7mers in these groupings are not observed enough times on the X chromosome in Japan for a statistical test to be informative (i.e. many mutation types have 0-3 polymorphisms present in Japan on X). Below, you can see an example:
 
-```{r, echo = F}
+```{r why tests are hard, echo = F}
 p.5mer <- binomtest.byrow(counts.JPT.5mer, gw.5mer, JPT5mers)
 kable(head(p.5mer, n = 10), caption = "X enrichment among 5mer cluster (first ten 5mers)")
 ```
 
 We find only two polymorphisms significant at fdr < 0.1:
 
-```{r, echo = F}
+```{r X enriched 5mers, echo = F}
 p.5mer$fdr <- p.adjust(p.5mer$p, "fdr")
 kable(subset(p.5mer[-c(2:6)], p.5mer$fdr < 0.1), row.names = F, caption = "5mers significantly enriched on X")
 ```
 
-```{r, echo = F, eval = F}
+```{r X enriched 7mers, echo = F, eval = F}
 p.7mer.1 <- binomtest.byrow(counts.JPT.7mer, gw.7mer, JPT7mers.1)
 p.7mer.1$fdr <- p.adjust(p.7mer.1$p, "fdr")
 kable(subset(p.7mer.1[-c(2:6)], p.7mer.1$fdr < 0.1), row.names = F, caption = "7mers significantly enriched on X")
@@ -576,7 +576,7 @@ chi.bysubset <- function(data, gw, muts = c()){
 }
 ```
 
-```{r}
+```{r x enrichment by cluster}
 #3mer groups
 chi.bycluster(data = counts.JPT.3mer, gw = gw.3mer,dr = dr.3mer.EASonly, k = 2, n = 1, exclude = c()) # p = 0.97, non-JPT-enriched group
 chi.bysubset(data = counts.JPT.3mer, gw = gw.3mer, muts = JPT3mers) # p = 0.2, JPT enriched group
@@ -600,7 +600,7 @@ chi.bysubset(counts.JPT.7mer, gw.7mer, muts.7.filtered) # p = 0.49
 
 Since we have all these pieces set up, I wanted to run the following test on X:
 
-```{r}
+```{r X enrichment across all contexts}
 # 3mers 
 x.3mers <- binomtest.byrow(counts.JPT.3mer, gw.3mer)
 kable(subset(x.3mers, x.3mers$p < 0.05/length(x.3mers$Context)))
