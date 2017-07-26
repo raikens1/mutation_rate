@@ -1,14 +1,13 @@
 # Custom files and directories #
 ################################
-helper_code/archive
 helper_code/playground
 *archive
-gw_context_counts/archive
 *outfiles
 *temp*
+sandbox*
 *folded_counts.txt
 *chrom_counts*
-singletons_excluded
+vcf_filtration/filtered_1kg_v3
 
 # Compiled source #
 ###################
@@ -18,6 +17,7 @@ singletons_excluded
 *.exe
 *.o
 *.so
+*.pyc
 
 # Packages #
 ############
@@ -30,7 +30,7 @@ singletons_excluded
 *.rar
 *.tar
 *.zip
-#*.gz 
+*.gz
 
 # Logs and databases #
 ######################
@@ -39,6 +39,8 @@ singletons_excluded
 *.err
 *.sql
 *.sqlite
+*.RData
+*.Rhistory
 
 # OS generated files #
 ######################
