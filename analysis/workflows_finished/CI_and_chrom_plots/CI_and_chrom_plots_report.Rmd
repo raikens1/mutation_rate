@@ -3,9 +3,9 @@ title: "Basic Plots and Data Gazing"
 author: "Rachael 'Rocky' Aikens, Voight Lab"
 date: "July 6, 2017"
 output:
+  html_document: default
   pdf_document:
     latex_engine: xelatex
-  html_document: default
 ---
 
 ```{r setup, echo = F, message = F, warning=F}
@@ -17,13 +17,15 @@ require(reshape2)
 library(gridExtra)
 library(grid)
 require("ggrepel")
+
+# set wd
+knitr::opts_knit$set(root.dir = '../../data')
 ```
 
 
 This document contains notes and visualizations of mutation rates for patterns of mutation on the 3mer, 5mer, and 7mer level which are interesting either because of their significance in heterogeneity test or the way that they cluster together in heatmaps.
 
 ```{r upload 7mers, echo = F, message = F}
-setwd("C:/Users/VoightLab/Dropbox/SNP_rates/Raw_Data/singletons_excluded/")
 AFR_7mer_counts <- read_delim("7mer/AFR_7mer_counts.txt", 
                               "\t", escape_double = FALSE, trim_ws = TRUE)
 EUR_7mer_counts <- read_delim("7mer/EUR_7mer_counts.txt", 
@@ -35,7 +37,6 @@ SAS_7mer_counts <- read_delim("7mer/SAS_7mer_counts.txt",
 ```
 
 ```{r upload 5mers, echo = F, message = F}
-setwd("C:/Users/VoightLab/Dropbox/SNP_rates/Raw_Data/singletons_excluded/")
 AFR_5mer_counts <- read_delim("5mer/AFR_5mer_counts.txt", 
                               "\t", escape_double = FALSE, trim_ws = TRUE)
 EUR_5mer_counts <- read_delim("5mer/EUR_5mer_counts.txt", 
@@ -47,7 +48,6 @@ SAS_5mer_counts <- read_delim("5mer/SAS_5mer_counts.txt",
 ```
 
 ```{r upload 3mers, echo = F, message = F}
-setwd("C:/Users/VoightLab/Dropbox/SNP_rates/Raw_Data/singletons_excluded/")
 AFR_3mer_counts <- read_delim("3mer/AFR_3mer_counts.txt", 
                               "\t", escape_double = FALSE, trim_ws = TRUE)
 EUR_3mer_counts <- read_delim("3mer/EUR_3mer_counts.txt", 
@@ -59,20 +59,17 @@ SAS_3mer_counts <- read_delim("3mer/SAS_3mer_counts.txt",
 ```
 
 ```{r upload gw counts, echo = F, message = F}
-setwd("C:/Users/VoightLab/Dropbox/SNP_rates/Raw_Data/gw_counts/")
-
-gw_5mer_counts <- read_delim("gw_5mer_counts.txt", 
+gw_3mer_counts <- read_delim("gw_counts/gw_3mer_counts.txt", 
                              "\t", escape_double = FALSE, trim_ws = TRUE)
-gw_3mer_counts <- read_delim("gw_3mer_counts.txt", 
+gw_5mer_counts <- read_delim("gw_counts/gw_5mer_counts.txt", 
                              "\t", escape_double = FALSE, trim_ws = TRUE)
-gw_7mer_counts <- read_delim("gw_7mer_counts.txt", 
+gw_7mer_counts <- read_delim("gw_counts/gw_7mer_counts.txt", 
                              "\t", escape_double = FALSE, trim_ws = TRUE)
 ```
 
-```{r upload subpops, echo = F, eval = F, message = F}
-source("C:/Users/VoightLab/Dropbox/SNP_rates/Code/data_wrangling/upload_subpops_3mer.R")
-source("C:/Users/VoightLab/Dropbox/SNP_rates/Code/data_wrangling/upload_subpops_5mer.R")
-source("C:/Users/VoightLab/Dropbox/SNP_rates/Code/data_wrangling/upload_subpops_7mer.R")
+```{r upload subpops, echo = F, message = F}
+source("../R_code/data_wrangling/upload_subpops_3mer.R")
+source("../R_code/data_wrangling/upload_subpops_7mer.R")
 ```
 
 
@@ -281,7 +278,7 @@ pairwise.chi <- function(counts.1, counts.2, filter = T){
 ```{r def subrate scplot, echo=F}
 # given: count1 and count2: pop-specific polymorphism dataframes; Mut: 3mer subcontext of interest,
 # generates a scatter plot of rate for mut in population 1 by population 2
-subrate.scplot <- function(count1, count2, mut, pops = c("Pop 1", "Pop 2"), label = c(), lm = T){
+subrate.scplot <- function(count1, count2, mut, pops = c("Pop 1", "Pop 2"), label = c(), lm = F){
   pop1.mut <- subset(count1, count1$X3mer == mut)
   pop2.mut <- subset(count2, count2$X3mer == mut)
   sample.size <- pop1.mut$Count + pop2.mut$Count
@@ -364,7 +361,7 @@ subrate.lplot <- function(AFR, EUR, EAS, SAS, mut){
 # Mutation rate differences at the 3mer level
 
 ```{r upload significant, echo = F, message = F}
-setwd("C:/Users/VoightLab/Dropbox/SNP_rates/Analyses/chi_squared_tests/results/ordered_p")
+setwd("../workflows_finished/chi_squared_tests/results/ordered_p")
 sig.3mers <- read_delim("o_significant_3mers.txt", 
                         delim ="\t", escape_double = F, trim_ws = T)
 sig.5mers <- read_delim("o_significant_new_5mers.txt", 
@@ -455,10 +452,6 @@ When we construct a heatmap of all 3mers, we find two clusters which appear enri
 
 These mutation types have the global profiles shown below:
 
-```{r upload 3mer subpops, echo = F, message = F}
-source("C:/Users/VoightLab/Dropbox/SNP_rates/Code/data_wrangling/upload_subpops_3mer.R")
-```
-
 ```{r, signal4 CI, echo =F}
 CI.plot.subpop(subpops.3mer.ancestral, "AAC->C", pops.ancestral)
 ```
@@ -492,12 +485,8 @@ Finally, an additional pattern of interest is the shared profiles of certain CpG
 
 Now that we have identified several groups of 3mer polymorphisms which appear to vary across populations, we would like to know whether local sequence context (up to 3 bases from the substitution) plays a role in driving the variation we observe.  To do this, we can bin the polymorphisms from any given 3mer (say, TCC->T) into 256 different 7mer expansions (e.g. ACTCCCT->A), and observe how their rates differ between populations.  
 
-```{r upload 7mer subpops, echo = F, message = F}
-source("C:/Users/VoightLab/Dropbox/SNP_rates/Code/data_wrangling/upload_subpops_7mer.R")
-```
-
-
 We'll begin with a simple null example.  The CpG transition CCG->T is relatively the same within East Asia. In this case, we expect to see some variation in rate between CCG->T expanisions due to 7mer effects that are uniform across all populations.  However, we expect the rates of any given 7mer to be equal between East Asian subpopulations.  This is what we see below, in Chinese Dai versus Japanese from Tokyo:
+
 
 ```{r null heterogeneity plot, echo = F, fig.align="center", fig.width = 3.25, fig.height=3.25}
 subrate.scplot(CDX_EAS_7mer_counts, JPT_EAS_7mer_counts, "CCG->T", c("CDX", "JPT"))
@@ -677,7 +666,7 @@ The last signal is GCC->T:
 subrate.scplot(AFR_7mer_counts, EUR_7mer_counts, "GCC->T", pops = c("AFR", "EUR"))
 ```
 
-This one appears also to be a 3mer signal, but the whole story may be more complicated, since we are seeing some abnormal results at the 5mer level (see notedbook).
+This one appears also to be a 3mer signal, but the whole story may be more complicated, since we are seeing some abnormal results at the 5mer level (see notebook).
 
 # Novel mutation rate differences at the 7mer level
 
