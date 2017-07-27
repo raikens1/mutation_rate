@@ -8,59 +8,67 @@ from itertools import product
 """
 RA, 7/24/2017
 count_contexts.py
-V1
+V2
 =======================
 Given a SNP list or vcf file and a sequence context window,
 Counts the number of occurances of each possible SNP type 
 	within that sequence context paradign
 =======================
-USEAGE: count_contexts.py INPUTFILE BEFORE AFTER
+USEAGE: count_contexts.py INPUTFILE FLANK
 """
 
 # TODO: 
-# [] add functionality that lets you choose between biopython and Varun's code
-# [] merge before and after into flank
-# [] add usage printing
+# - [ ] add functionality that lets you choose between biopython and Varun's code
+# - [ ] merge before and after into flank
+# - [ ] add read-in from reference file instead of initializing from permutations
 
 def main():
-	border =  "=========================================\n"
-	print border + "\t\tCount Contexts!" + "\n"
-	print "This tool counts mutations of different types in a given chromosome file.\n" + border
+
+	intro() #print program name and usage
+
+	if len(argv) == 1:
+		print "No inputs detected.  Exiting!\n"
+		exit(0)
 	
+	#count infile
 	infile = argv[1]
 	print "See " + infile[:-3] + "_counts.log for progress on this job." 
 	with open(infile[:-3] + "_counts.log", "w+") as log:
 		log.write("Tracking progress for this count job.\n")
 
-	counter = Counter(int(argv[2]), int(argv[3]))
+	counter = Counter(int(argv[2]))
 	counter.count(infile)
 	counter.write_counts(infile[:-3] + "_folded_counts.txt")
+
+def intro():
+	border =  "=========================================================================\n"
+	print border + "\t\t\tCount Contexts!" + "\n"
+	print "This tool counts mutations of different types in a given chromosome file.\n"
+	print "USEAGE: count_contexts.py INPUTFILE FLANK \n" + border
 
 """
 	Counter Object:
 	Counts mutations in a private file by sequence context
 	Class variables:
-		- before (int) number of bases before position to include in context window
-		- after (int) number of bases after position
+		- flank (int) number of flanking bases of sequence context to consider
 		- counts (dict) maps contexts to counts (folded)
 		- compliments (dict) maps complimentary bases to each other
 """
 
 class Counter(object):
-	def __init__(self, before, after):
-		self.before = before
-		self.after = after
+	def __init__(self, flank):
+		self.flank = flank
 		self.compliments = {"A":"T", "T":"A", "G":"C", "C":"G"}
 		self.counts = self.init_counts()
 
 	#helper function to initialize counts dictionary
 	def init_counts(self):
 		counts = {}
-		length = self.before + self.after + 2
+		length = 2*self.flank + 2
 		for combination in product('ACGT', repeat = length):
 			bases = ''.join(combination)
 			context = bases[:length-1] + '->' + bases[length-1]
-			if bases[self.before] == bases[length-1]: #remove C->C, A->A, mutations, etc.
+			if bases[self.flank] == bases[length-1]: #remove C->C, A->A, mutations, etc.
 				pass
 			elif self.reverse_comp(context) not in counts:
 				counts[context] = 0
@@ -75,7 +83,7 @@ class Counter(object):
 			for line in f:
 				if not line.startswith('#'):
 					context = self.parse_context(line)
-					if context[self.before] == context[-1]:
+					if context[self.flank] == context[-1]:
 						with open(infile[:-3] + "_counts.log", "a") as log:
 							log.write("Error: reference matches alternate:\n")
 							log.write(line)
@@ -96,7 +104,7 @@ class Counter(object):
 	#given a line from a file, return sequence context(e.g. "TCC->T")
 	def parse_context(self, line):
 		row = line.split("\t")
-		sequence = get_seq_context_variant(row[0], row[1], self.before, self.after)
+		sequence = get_seq_context_variant(row[0], row[1], self.flank, self.flank)
 		context = sequence + "->" + row[4]
 		return context
 
@@ -116,7 +124,7 @@ class Counter(object):
 
 	#given a mutation type, return reverse compliment
 	def reverse_comp(self, context):
-		window = self.before + self.after + 1
+		window = 2*self.flank + 1
 		sequence = context[0:window]
 		alt = context[-1]
 
@@ -128,11 +136,11 @@ class Counter(object):
 
 	#given a context, find onemer
 	def one_mer(self, context):
-		ref = context[self.before]
+		ref = context[self.flank]
 		if ref in ['T', 'G']:
 			return self.compliments[ref] + "->" + self.compliments[context[-1]]
 		else:
-			return context[self.before] + '->' + context[-1]
+			return context[self.flank] + '->' + context[-1]
 
 if __name__ == '__main__':
 	main()
