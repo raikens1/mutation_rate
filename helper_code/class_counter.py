@@ -12,7 +12,7 @@ Writes a file of the counts of polymorphisms for each context
 =============================================================
 """
 
-# TODO: 
+# TODO:
 # - [ ] add functionality that lets you choose to go faster with chromosome knowledge
 # - [ ] add read-in from reference file instead of initializing from permutations
 # - [ ] get rid of One_mer column
@@ -61,7 +61,7 @@ class Counter(object):
 					elif "N" in context:
 						with open(infile[:-3] + "_counts.log", "a") as log:
 							log.write("Error: N in reference genome: %s \n" % context)
-							log.write(line)							
+							log.write(line)
 					elif context in self.counts:
 						self.counts[context] += 1
 					else:
