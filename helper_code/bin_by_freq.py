@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from find_context import get_seq_context_variant
 from sys import argv
 from os import rename
 import gzip
@@ -85,14 +84,6 @@ def readSNPs(SNPfile, m):
 		log.write("\t".join(loginfo))
 		o.close()
 		b+=1
-
-"""
-Some code I didn't use but might want later:
-==============================================
-#write new name to bin file
-newname = handle + "_AF_" + str(sum_AF/(j)) + "_j_" + str(j) + ".gz"
-rename(handle+'_bin'+str(b)+'.gz', newname)
-"""
 
 if __name__ == '__main__':
 	main()
