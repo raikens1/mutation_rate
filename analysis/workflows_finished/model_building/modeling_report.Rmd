@@ -1,0 +1,99 @@
+---
+title: "Model Building"
+author: "Rachael 'Rocky' Aikens, Voight Lab"
+date: "July 28, 2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_knit$set(root.dir = '../../data')
+```
+
+# Methodology
+
+In order to develop a formal statistical framework for understanding global polymorphism, we designed a series of multinomial models after Aggarwala and Voight, which capture different levels of mutation rate variation. First, we defined cosmopolitan SNPs to be those which are shared between two or more of the African, European, South Asian, and East Asian 1,000 genomes samples. For a given population at a given sequence context, the probability of recurrent mutation is assumed to be zero. Under these assumptions, we have seven mutually exclusive possible events:
+
+* site is not polymorphic, 
+* it is a private polymorphism for that population (with three possible alternate alleles), or
+* it is a cosmopolitan polymorphism (with three possible alternate alleles). 
+
+If the context appears $N$ times in the genome, polymorphism in this population follows a multinomial distribution with size $N$ and parameters $c_1$, $c_2$, and $c_3$ for the probabilities of each cosmopolitan polymorphism, and $p_1$, $p_2$, and $p_3$ for the three private polymorphisms.
+
+If the mutation rate at this context had not changed in recent evolutionary time for this population, then we would expect the probabilities of each private polymorphism type to be proportional to the probabilities of the corresponding cosmopolitan polymorphism types.  It remains to estimate this proportionality constant, which we denote $\alpha$.  In a null model ($H_0$), mutation rate has not changed at any context, so $\alpha$ for a given population is just the ratio of total private polymorphisms to total cosmopolitan polymorphisms over all contexts. Alternatively ($H_1$), if mutation rate has changed at specific contexts but the relative substitution probabilities for the alternative alleles is fixed, then a unique $\alpha$ must be estimated from the private to cosmopolitan ratio of polymorphisms at each context.  Finally, in a model which allows for maximal polymorphism variation ($H_2$), mutation rate may have changed even between different polymorphism types at same context (e.g. C/T, C/A, and C/G polymorphism at a C context). In this model, the private substitution rates are not proportional to the cosmopolitan rates even at a context-specific level, and the private rates must be estimated independently for each possible mutation.
+
+Once we have estimated the necessary parameters for each of these three models from the 1,000 genomes dataset, we can compare the fit of the observed data under each model ($H_0$, $H_1$, or $H_2$) using a log-likelihood ratio test. If $\Lambda$ represents the ratio of the likelihoods of a null model to an alternative, the test statistic $-2\ln(\Lambda)$ is known to approximately follow a chi-squared distribution with degrees of freedom equal to the difference in the number of parameters in the null versus the alternative. This testing framework allows us to ask broad questions about what level of mutation rate variability best explains observed polymorphism data at a given sequence context level.
+
+I've written a function **likelihood.test** that essentially does these calculations for you.  
+
+```{r}
+likelihood.test <- function(priv, cosmo, gw, nmer){
+  if (nmer == 3){
+    dfs <- c(31, 64, 95)
+  }
+  else if (nmer == 5){
+    dfs <- c(511, 1024, 1535)
+  }
+  else {
+    dfs <- c(8191, 16384, 24575)
+  }
+  n.contexts <- length(gw$Context)
+  result <- data.frame(matrix(nrow = n.contexts + 1, ncol = 18))
+  colnames(result)<- c('Context', 's1', 's2', 's3', 'p1', 'p2', 'p3', 'same', 
+                       'alpha', 'likelihood_0','likelihood_1', 'likelihood_2',
+                       'Chi_stat_0v1', 'p_0v1', 'Chi_stat_1v2', 'p_1v2', 'Chi_stat_0v2', 'p_0v2')
+  result$Context[-(n.contexts+1)] <- as.character(gw$Context)
+  alpha.all <- sum(priv$Count)/sum(cosmo$Count)
+  
+  for (i in 1:n.contexts){
+    #priv and cosmo are indexed differently than the result table, so calculate a second index value
+    i.1 <- 1+3*(i-1)
+    
+    #getting counts for mutation types from input dataframes
+    counts.s <- c(cosmo$Count[i.1], cosmo$Count[i.1+1],cosmo$Count[i.1+2])
+    counts.p <- c(priv$Count[i.1],priv$Count[i.1+1],priv$Count[i.1+2])
+    gw_total <- gw$GW_total[i]
+    counts.all <- c(counts.s, counts.p, gw_total - sum(c(counts.s, counts.p)))
+    
+    #ratio of private to shared SNPs
+    alpha <- sum(counts.p)/sum(counts.s)
+    
+    #parameters for null and alternative hypotheses
+    thetas.H2 <- counts.all/gw_total
+    thetas.H1 <- c(counts.s, counts.s*alpha, counts.all[7])/gw_total
+    thetas.H0 <- c(counts.s, counts.s*alpha.all, counts.all[7])/gw_total
+    
+    #log likelihood ratio test
+    likelihood_2 <- dmultinom(x = counts.all, prob = thetas.H2, log = TRUE)    
+    likelihood_1 <- dmultinom(x = counts.all, prob = thetas.H1, log = TRUE)
+    likelihood_0 <- dmultinom(x = counts.all, prob = thetas.H0, log = TRUE)
+    Chi_0v1 <- NA
+    Chi_1v2 <- -2*(likelihood_1-likelihood_2)
+    Chi_0v2 <- NA
+    p_0v1 <- NA
+    p_1v2 <- pchisq(Chi_1v2, df = 2, lower.tail = FALSE, log.p = FALSE)
+    p_0v2 <- NA
+    
+    #populate result table
+    result[i,][-1] <- c( counts.all, alpha, likelihood_0, likelihood_1, likelihood_2,
+                        Chi_0v1, p_0v1, Chi_1v2, p_1v2, Chi_0v2, p_0v2)
+  }
+  
+  #calculate stats over all contexts
+  likelihood_0.all <- sum(as.numeric(result$likelihood_0), na.rm = TRUE)
+  likelihood_1.all <- sum(as.numeric(result$likelihood_1), na.rm = TRUE)
+  likelihood_2.all <- sum(as.numeric(result$likelihood_2), na.rm = TRUE)
+  Chi_0v1.all <- -2*(likelihood_0.all-likelihood_1.all)
+  Chi_1v2.all <- -2*(likelihood_1.all-likelihood_2.all)
+  Chi_0v2.all <- -2*(likelihood_0.all-likelihood_2.all)
+  p_0v1.all <- pchisq(Chi_0v1.all, df = dfs[1], lower.tail = FALSE, log.p = TRUE)*log10(exp(1))
+  p_1v2.all <- pchisq(Chi_1v2.all, df = dfs[2], lower.tail = FALSE, log.p = TRUE)*log10(exp(1))
+  p_0v2.all <- pchisq(Chi_0v2.all, df = dfs[3], lower.tail = FALSE, log.p = TRUE)*log10(exp(1))
+  
+  result[n.contexts + 1,] <- c("Summary", rep(NA, 7), alpha.all, likelihood_0.all, likelihood_1.all, likelihood_2.all,
+                                   Chi_0v1.all, p_0v1.all, Chi_1v2.all, p_1v2.all, Chi_0v2.all, p_0v2.all)
+  
+  return(result)
+}
+```
+
