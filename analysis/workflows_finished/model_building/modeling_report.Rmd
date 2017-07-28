@@ -2,13 +2,46 @@
 title: "Model Building"
 author: "Rachael 'Rocky' Aikens, Voight Lab"
 date: "July 28, 2017"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 knitr::opts_knit$set(root.dir = '../../data')
+library(readr)
 ```
+
+```{r data upload, message = FALSE}
+# Count dataframes
+AFR_3mer_counts <- read.delim('3mer/AFR_3mer_counts.txt')
+EUR_3mer_counts <- read.delim('3mer/EUR_3mer_counts.txt')
+EAS_3mer_counts <- read.delim('3mer/EAS_3mer_counts.txt')
+SAS_3mer_counts <- read.delim('3mer/SAS_3mer_counts.txt')
+COSMO_3mer_counts <- read.delim('3mer/COSMO_3mer_counts.txt')
+
+AFR_5mer_counts <- read.delim('5mer/AFR_5mer_counts.txt')
+EUR_5mer_counts <- read.delim('5mer/EUR_5mer_counts.txt')
+EAS_5mer_counts <- read.delim('5mer/EAS_5mer_counts.txt')
+SAS_5mer_counts <- read.delim('5mer/SAS_5mer_counts.txt')
+COSMO_5mer_counts <- read.delim('5mer/COSMO_5mer_counts.txt')
+
+AFR_7mer_counts <- read.delim('7mer/AFR_7mer_counts.txt')
+EUR_7mer_counts <- read.delim('7mer/EUR_7mer_counts.txt')
+EAS_7mer_counts <- read.delim('7mer/EAS_7mer_counts.txt')
+SAS_7mer_counts <- read.delim('7mer/SAS_7mer_counts.txt')
+COSMO_7mer_counts <- read.delim('7mer/COSMO_7mer_counts.txt')
+
+#gw_count references 
+gw_3mer_counts <- read_delim("gw_counts/gw_3mer_counts.txt", 
+                             "\t", escape_double = FALSE, trim_ws = TRUE)
+gw_5mer_counts <- read_delim("gw_counts/gw_5mer_counts.txt", 
+                             "\t", escape_double = FALSE, trim_ws = TRUE)
+gw_7mer_counts <- read_delim("gw_counts/gw_7mer_counts.txt", 
+                             "\t", escape_double = FALSE, trim_ws = TRUE)
+```
+
 
 # Methodology
 
@@ -22,11 +55,13 @@ If the context appears $N$ times in the genome, polymorphism in this population 
 
 If the mutation rate at this context had not changed in recent evolutionary time for this population, then we would expect the probabilities of each private polymorphism type to be proportional to the probabilities of the corresponding cosmopolitan polymorphism types.  It remains to estimate this proportionality constant, which we denote $\alpha$.  In a null model ($H_0$), mutation rate has not changed at any context, so $\alpha$ for a given population is just the ratio of total private polymorphisms to total cosmopolitan polymorphisms over all contexts. Alternatively ($H_1$), if mutation rate has changed at specific contexts but the relative substitution probabilities for the alternative alleles is fixed, then a unique $\alpha$ must be estimated from the private to cosmopolitan ratio of polymorphisms at each context.  Finally, in a model which allows for maximal polymorphism variation ($H_2$), mutation rate may have changed even between different polymorphism types at same context (e.g. C/T, C/A, and C/G polymorphism at a C context). In this model, the private substitution rates are not proportional to the cosmopolitan rates even at a context-specific level, and the private rates must be estimated independently for each possible mutation.
 
+# Likelihood testing
+
 Once we have estimated the necessary parameters for each of these three models from the 1,000 genomes dataset, we can compare the fit of the observed data under each model ($H_0$, $H_1$, or $H_2$) using a log-likelihood ratio test. If $\Lambda$ represents the ratio of the likelihoods of a null model to an alternative, the test statistic $-2\ln(\Lambda)$ is known to approximately follow a chi-squared distribution with degrees of freedom equal to the difference in the number of parameters in the null versus the alternative. This testing framework allows us to ask broad questions about what level of mutation rate variability best explains observed polymorphism data at a given sequence context level.
 
-I've written a function **likelihood.test** that essentially does these calculations for you.  
+I've written a function **likelihood.test** that essentially does these calculations for you.  Like most other functions of mine, it uses count dataframes with a reference dataframe of genome wide counts.
 
-```{r}
+```{r def likelihood.test}
 likelihood.test <- function(priv, cosmo, gw, nmer){
   if (nmer == 3){
     dfs <- c(31, 64, 95)
@@ -97,3 +132,95 @@ likelihood.test <- function(priv, cosmo, gw, nmer){
 }
 ```
 
+
+```{r run likelihood.test}
+# run for each pop, for each kmer
+LRT.3mer.EUR <- likelihood.test(EUR_3mer_counts, COSMO_3mer_counts, gw_3mer_counts, nmer = 3)
+LRT.3mer.AFR <- likelihood.test(AFR_3mer_counts, COSMO_3mer_counts, gw_3mer_counts, nmer = 3)
+LRT.3mer.EAS <- likelihood.test(EAS_3mer_counts, COSMO_3mer_counts, gw_3mer_counts, nmer = 3)
+LRT.3mer.SAS <- likelihood.test(SAS_3mer_counts, COSMO_3mer_counts, gw_3mer_counts, nmer = 3)
+
+LRT.5mer.EUR <- likelihood.test(EUR_5mer_counts, COSMO_5mer_counts, gw_5mer_counts, nmer = 5)
+LRT.5mer.AFR <- likelihood.test(AFR_5mer_counts, COSMO_5mer_counts, gw_5mer_counts, nmer = 5)
+LRT.5mer.EAS <- likelihood.test(EAS_5mer_counts, COSMO_5mer_counts, gw_5mer_counts, nmer = 5)
+LRT.5mer.SAS <- likelihood.test(SAS_5mer_counts, COSMO_5mer_counts, gw_5mer_counts, nmer = 5)
+
+LRT.7mer.EUR <- likelihood.test(EUR_7mer_counts, COSMO_7mer_counts, gw_7mer_counts, nmer = 7)
+LRT.7mer.AFR <- likelihood.test(AFR_7mer_counts, COSMO_7mer_counts, gw_7mer_counts, nmer = 7)
+LRT.7mer.EAS <- likelihood.test(EAS_7mer_counts, COSMO_7mer_counts, gw_7mer_counts, nmer = 7)
+LRT.7mer.SAS <- likelihood.test(SAS_7mer_counts, COSMO_7mer_counts, gw_7mer_counts, nmer = 7)
+```
+
+```{r write LRTdata to file, message = F}
+setwd("../workflows_finished/model_building/results/")
+
+write.table(LRT.3mer.AFR, "AFR_LRT_3mer.txt", quote = F, sep = "\t", row.names = F)
+write.table(LRT.3mer.EUR, "EUR_LRT_3mer.txt", quote = F, sep = "\t", row.names = F)
+write.table(LRT.3mer.EAS, "EAS_LRT_3mer.txt", quote = F, sep = "\t", row.names = F)
+write.table(LRT.3mer.SAS, "SAS_LRT_3mer.txt", quote = F, sep = "\t", row.names = F)
+
+write.table(LRT.5mer.AFR, "AFR_LRT_5mer.txt", quote = F, sep = "\t", row.names = F)
+write.table(LRT.5mer.EUR, "EUR_LRT_5mer.txt", quote = F, sep = "\t", row.names = F)
+write.table(LRT.5mer.EAS, "EAS_LRT_5mer.txt", quote = F, sep = "\t", row.names = F)
+write.table(LRT.5mer.SAS, "SAS_LRT_5mer.txt", quote = F, sep = "\t", row.names = F)
+
+write.table(LRT.7mer.AFR, "AFR_LRT_7mer.txt", quote = F, sep = "\t", row.names = F)
+write.table(LRT.7mer.EUR, "EUR_LRT_7mer.txt", quote = F, sep = "\t", row.names = F)
+write.table(LRT.7mer.EAS, "EAS_LRT_7mer.txt", quote = F, sep = "\t", row.names = F)
+write.table(LRT.7mer.SAS, "SAS_LRT_7mer.txt", quote = F, sep = "\t", row.names = F)
+```
+
+# Parameter Estimation
+
+The function **likelihood.test** generates dataframes of the counts of each type of private and cosmopolitan polymorphism, plus likelihood calculations for each of the three hypothesis ($H_0$, $H_1$, and $H_2$).  Since $H_2$, the model allowing for maximal level of mutation rate variation, is the domimant one, we'd like to be able to calculate and report the parameters of these models for future use.  For each context type, we can do that simply by dividing the counts of private and cosmopolitan substitutions by the number of total genome wide sites in our inclusion regions.  The function **estimate.H2** does that conversion.
+
+```{r def estimate H2}
+estimate.H2 <- function(LRTdata){
+  LRTdata <- head(LRTdata, -1) # remove summary row
+  result <- LRTdata[,c(2:8)] # grab just the counts from LRTdata
+  result <- sapply(result, as.numeric)
+  sums <- rowSums(result) # backcalculate genome-wide totals
+  result <- result/sums
+  result <- cbind(LRTdata$Context, result)
+  return(result)
+}
+```
+
+These likelihood ratio test results and parameter estimates are saved in the results subdirectory.
+
+```{r estimate parameters}
+# run for each pop, for each kmer
+params.3mer.AFR <- estimate.H2(LRT.3mer.AFR)
+params.3mer.EUR <- estimate.H2(LRT.3mer.EUR)
+params.3mer.EAS <- estimate.H2(LRT.3mer.EAS)
+params.3mer.SAS <- estimate.H2(LRT.3mer.SAS)
+
+params.5mer.AFR <- estimate.H2(LRT.5mer.AFR)
+params.5mer.EUR <- estimate.H2(LRT.5mer.EUR)
+params.5mer.EAS <- estimate.H2(LRT.5mer.EAS)
+params.5mer.SAS <- estimate.H2(LRT.5mer.SAS)
+
+params.7mer.AFR <- estimate.H2(LRT.7mer.AFR)
+params.7mer.EUR <- estimate.H2(LRT.7mer.EUR)
+params.7mer.EAS <- estimate.H2(LRT.7mer.EAS)
+params.7mer.SAS <- estimate.H2(LRT.7mer.SAS)
+```
+
+```{r write parameters to file, message = F}
+setwd("../workflows_finished/model_building/results/")
+
+write.table(params.3mer.AFR, "AFR_3mer_model_params.txt", quote = F, sep = "\t", row.names = F)
+write.table(params.3mer.EUR, "EUR_3mer_model_params.txt", quote = F, sep = "\t", row.names = F)
+write.table(params.3mer.EAS, "EAS_3mer_model_params.txt", quote = F, sep = "\t", row.names = F)
+write.table(params.3mer.SAS, "SAS_3mer_model_params.txt", quote = F, sep = "\t", row.names = F)
+
+write.table(params.5mer.AFR, "AFR_5mer_model_params.txt", quote = F, sep = "\t", row.names = F)
+write.table(params.5mer.EUR, "EUR_5mer_model_params.txt", quote = F, sep = "\t", row.names = F)
+write.table(params.5mer.EAS, "EAS_5mer_model_params.txt", quote = F, sep = "\t", row.names = F)
+write.table(params.5mer.SAS, "SAS_5mer_model_params.txt", quote = F, sep = "\t", row.names = F)
+
+write.table(params.7mer.AFR, "AFR_7mer_model_params.txt", quote = F, sep = "\t", row.names = F)
+write.table(params.7mer.EUR, "EUR_7mer_model_params.txt", quote = F, sep = "\t", row.names = F)
+write.table(params.7mer.EAS, "EAS_7mer_model_params.txt", quote = F, sep = "\t", row.names = F)
+write.table(params.7mer.SAS, "SAS_7mer_model_params.txt", quote = F, sep = "\t", row.names = F)
+```
