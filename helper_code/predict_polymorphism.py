@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 from sys import argv
 from Bio import SeqIO
 
@@ -10,14 +11,18 @@ Defines a basic predictor object:
 Given a fasta file, a dataframe of model parameters, and SNP count
 Calculate the poisson binomial parameters and report p count
 =========================================
-USEAGE: predict_polymorphism.py SEQ.fa PARAMS.txt COUNT PRIV
+USEAGE: predict_polymorphism.py INCLUDE.bed PARAMS.txt PRIV COUNT
 """
 
 def main():
-    if lenth(argv) == 1:
+    if len(argv) == 1:
         print usage
         print "No arguements specified.  Exiting!"
         exit(0)
+
+    pred = Predictor(argv[2], bool(int(argv[3])))
+
+
 
 """
 	Predictor Object:
@@ -29,36 +34,34 @@ def main():
 		- compliments (dict) maps complimentary bases to each other
 """
 class Predictor(object):
-    def __init__(self, bed, modelfile, priv):
-        self.bedfile = bed
+    def __init__(self, modelfile, priv):
         self.prob = {}
-        self.flank = 0
         self.chrom = ''
         self.ref_genome_chr = ''
         self.compliments = {"A":"T", "T":"A", "G":"C", "C":"G"}
         self.priv = priv
+        self.params = []
 
-        self.readProb(params)
+        self.readProb(modelfile)
+        self.flank = (len(self.prob.keys()[0])-1)/2
 
     #initialize self.prob and self.flank from prob file
     def readProb(self, modelfile):
         with open(modelfile, 'r') as m:
             m.next() #skip header
-            row = m.readline().split('\t')
-            self.flank = len(row[0])
-            self.parserow(row)
             for line in m:
-                self.parserow(line.split('\t')) 
+                self.parserow(line.split('\t'))
+
 
     #given a row of a modelfile, add to self.prob
     def parserow(self, row):
         if self.priv:
-            self.param[row[0]] = sum(float(row[4:7]))
+        	self.prob[row[0]] = sum([float(n) for n in row[4:7]])
         else:
-            self.param[row[0]] = sum(float(row[1:3]))
+            self.prob[row[0]] = sum([float(n) for n in row[1:4]])
 
     #calculate parameters for sequence
-    def getParams(self):
+    def getParams(self, bedfile):
         pass
 
     #given a sequence, return reverse compliment
