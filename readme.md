@@ -44,7 +44,7 @@ This script was written to parallel process by chromosome.  Once the script is r
 
 Once the counting has been done, I switch to R for the remainder of my analysis. The R function called 'preprocess_chrom_counts' (saved in 'analysis/R_code') takes in a chrom_counts file and generates a count dataframe, which is the master file type used for almost all of my downstream analyses. For each polymorphism/mutation type, it contains the number of contexts appearing in the human reference genome (from analysis/data/gw_context_counts), inferred genome-wide mutation rate, all subcontexts, and number of observed polymorphic sites in the included regions.  These files can be found in the 'R_data' directory.
 
-The only other input type I've used is the rate matrix format, which is needed to construct heatmaps. These files, along with all my count dataframes, will be organized into a subdirectory of 'analysis/data' soon.
+There are a couple other important data files I use, such as the rate matrix format, which is needed to construct heatmaps, and the gw_counts dataframe, which is used to generate count dataframes.  These files can be found in 'analysis/R_data'.  The information they contain is detailed in the readme in that directory.
 
 ### 5. Analysis in R
 
