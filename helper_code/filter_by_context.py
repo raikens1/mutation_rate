@@ -16,6 +16,23 @@ USEAGE: filter_by_context.py INPUT.GZ MUTATIONS_FILE CHROM
 """
 
 def main():
+	# if no args, print usage
+	if len(argv) == 1 :
+
+		print """
+RA, 6/29/2017
+filter_by_context
+V2
+=======================
+Given a vcf file and a mutation type file
+this tool prints all the lines with those mutation types
+=======================
+USEAGE: filter_by_context.py INPUT.GZ MUTATIONS_FILE CHROM
+
+No arguements specified. Exiting!
+		"""
+		exit(0)
+
 	#parse args
 	infile = argv[1]
 	bed = True #TODO: someday I should set this to be user specified
