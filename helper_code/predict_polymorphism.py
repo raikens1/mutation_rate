@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from sys import argv
 from Bio import SeqIO
+from scipy.stats import poisson
 
 usage = """
 RA, 6/12/2017
@@ -118,6 +119,15 @@ class Predictor(object):
                 self.params.append(p)
                 self.mean += p
         print self.mean
+
+    # write self.params as a space delimited file (to be read by R as a vector)
+    def writeParams(self, outfile):
+        with open(outfile, 'w+') as o:
+            o.write(" ".join(self.params))
+
+    # Use Le Cam's theorem to approximate cdf of poibin
+    def ppoibin(self, count):
+        return poisson.cdf(count, self.mean)
 
 if __name__ == '__main__':
     main()
