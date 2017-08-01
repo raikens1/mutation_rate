@@ -16,17 +16,21 @@ USEAGE: predict_polymorphism.py INCLUDE.bed PARAMS.txt PRIV COUNT
 """
 
 def main():
+    print usage
     if len(argv) == 1:
-        print usage
         print "No arguements specified.  Exiting!"
         exit(0)
 
-    print "Reading in model parameters from " + argv[2]
     pred = Predictor(argv[2], bool(int(argv[3])))
 
-    print "Calculating parameters for regions in " + argv[1]
     pred.getParams(argv[1])
 
+    pred.writeParams(argv[1])
+
+    count = int(argv[4])
+    p = pred.ppoibin(count)
+    
+    print "The probability of observing %d or fewer polymorphisms on this sequence is %f\n" % (count, p)
 
 
 """
@@ -56,6 +60,7 @@ class Predictor(object):
 
     # initialize self.prob and self.flank from prob file
     def readProb(self, modelfile):
+        print "Reading in model parameters from %s.\n" % modelfile
         with open(modelfile, 'r') as m:
             m.next() #skip header
             for line in m:
@@ -71,22 +76,28 @@ class Predictor(object):
 
     # calculate parameters for sequence
     def getParams(self, bedfile):
+        print "Calculating poisson binomial parameters for regions in %s.\n" % bedfile 
+        i = 0
         with open(bedfile, 'r') as b:
             for line in b:
-                print line
                 row = line.split('\t')
-                print row
                 if not line.startswith("chr"): # skip comment line
                     continue
                 elif row[0][3:] != self.chrom:
-                    print row[0]
+                    if i != 0:
+                        print "Read %d lines" % i 
                     self.switchChrom(row[0][3:])
+                    i = 0
                 self.parseBedLine(row)
+                i += 1
+        print "Read %d lines\n" % i
+        print "The expected number of polymorphisms on this sequence is %f.\n" % self.mean
 
     # load new chrom file
     def switchChrom(self, chrom):
-        print "Loading new chromosome sequence."
+        print "Loading new chromosome sequence...",
         self.ref_genome_chr = SeqIO.read('/project/voight_datasets/hg19/chr'+chrom+'.fa', "fasta")
+        print "done!"
         self.chrom = chrom
 
     # given position, get context
@@ -105,11 +116,16 @@ class Predictor(object):
     def parseBedLine(self, row):
         start = int(row[1])
         stop = int(row[2])
+
         for i in range(start+1, stop+1):
             seq = self.get_context(i)
+            
+            # skip if N in ref genome
             if "N" in seq:
                 print seq
                 continue
+
+            # append substitution prob to parameter list
             elif seq in self.prob:
                 p = self.prob[seq]
                 self.params.append(p)
@@ -118,12 +134,18 @@ class Predictor(object):
                 p = self.prob[self.reverse_comp(seq)]
                 self.params.append(p)
                 self.mean += p
-        print self.mean
 
     # write self.params as a space delimited file (to be read by R as a vector)
-    def writeParams(self, outfile):
+    def writeParams(self, bedfile):
+        # make output file name
+        outfile = bedfile.split('.')[0] # remove file extension
+        k = 2*self.flank+1
+        outfile = outfile + '_' + str(k) + "mer_poibin_params.txt"
+
+        # write to file
+        print "Writing these parameters to %s.\n" % outfile
         with open(outfile, 'w+') as o:
-            o.write(" ".join(self.params))
+            o.write(" ".join([str(f) for f in self.params]))
 
     # Use Le Cam's theorem to approximate cdf of poibin
     def ppoibin(self, count):
