@@ -2,6 +2,8 @@
 
 This directory contains the code I use to parse vcf files for information about allele frequency and polymorphism counts.
 
+- [ ] add to this readme
+
 ## Code
 
 There are a couple main scripts here:
