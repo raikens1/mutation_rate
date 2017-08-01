@@ -2,8 +2,6 @@
 
 This directory contains the code I use to parse vcf files for information about allele frequency and polymorphism counts.
 
-- [ ] add to this readme
-
 ## Code
 
 There are a couple main scripts here:
@@ -14,6 +12,7 @@ There are a couple main scripts here:
  - **filter_by_context** given a text file of polymorphism types and an input vcf, this script will generate a .bed file of all the SNPs of those polymorphism types.
  - **class_counter** This defines the counter class relied upon by count_contexts.py
  - **get_context.py** Defines a simple function that returns the sequence context of a variant based on hg19.  I didn't archive this because I thought it might come in handy someday.
+ - **predict_polymorphism.py** Defines a predictor class and uses input model parameters to predict the number of polymorphisms expected in the regions specified by and input bedfile. The count of polymorphisms follows a poisson binomial (poibin), so this tool writes the poibin parameters to file for hypothesis testing in R.
 
 ## ref_files
 
