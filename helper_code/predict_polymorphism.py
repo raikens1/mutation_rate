@@ -119,13 +119,14 @@ class Predictor(object):
     def parseBedLine(self, row):
         start = int(row[1])
         stop = int(row[2])
+        n = 0
 
         for i in range(start+1, stop+1):
             seq = self.get_context(i)
             
             # skip if N in ref genome
             if "N" in seq:
-                print seq
+                n += 1
                 continue
 
             # append substitution prob to parameter list
@@ -137,6 +138,8 @@ class Predictor(object):
                 p = self.prob[self.reverse_comp(seq)]
                 self.params.append(p)
                 self.mean += p
+        if n != 0:
+            print "Omitted %d contexts with N in reference genome" % n
 
     # write self.params as a space delimited file (to be read by R as a vector)
     def writeParams(self, bedfile):
