@@ -30,7 +30,10 @@ def main():
     count = int(argv[4])
     p = pred.ppoibin(count)
     
-    print "The probability of observing %d or fewer polymorphisms on this sequence is %f\n" % (count, p)
+    print """Using Le Cam's poisson approximation, the probability of 
+observing %d or fewer polymorphisms on this sequence is %f.
+For a more exact calculation, import the poibin parameters to R and
+calculate using the DFT-CF method in package poibin.\n""" % (count, p)
 
 
 """
