@@ -12,7 +12,7 @@ Defines a basic predictor object:
 Given a fasta file, a dataframe of model parameters, and SNP count
 Calculate the poisson binomial parameters and report p count
 =========================================
-USEAGE: predict_polymorphism.py INCLUDE.bed PARAMS.txt PRIV COUNT
+USEAGE: predict_polymorphism.py INCLUDE.bed PARAMS.txt PRIV COUNT(optional)
 """
 
 def main():
@@ -27,10 +27,11 @@ def main():
 
     pred.writeParams(argv[1])
 
-    count = int(argv[4])
-    p = pred.ppoibin(count)
+    if len(argv) == 5:
+        count = int(argv[4])
+        p = pred.ppoibin(count)
     
-    print """Using Le Cam's poisson approximation, the probability of 
+        print """Using Le Cam's poisson approximation, the probability of 
 observing %d or fewer polymorphisms on this sequence is %f.
 For a more exact calculation, import the poibin parameters to R and
 calculate using the DFT-CF method in package poibin.\n""" % (count, p)
@@ -144,9 +145,9 @@ class Predictor(object):
     # write self.params as a space delimited file (to be read by R as a vector)
     def writeParams(self, bedfile):
         # make output file name
-        outfile = bedfile.split('.')[0] # remove file extension
+        outfile = bedfile.split('/')[-1].split(".")[0] # remove file extension
         k = 2*self.flank+1
-        outfile = outfile + '_' + str(k) + "mer_poibin_params.txt"
+        outfile = outfile + '_' + str(k) + "mer_poibin.params"
 
         # write to file
         print "Writing these parameters to %s.\n" % outfile

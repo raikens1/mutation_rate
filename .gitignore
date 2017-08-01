@@ -8,6 +8,7 @@ sandbox*
 *folded_counts.txt
 *chrom_counts*
 vcf_filtration/filtered_1kg_v3
+*.params
 
 # Compiled source #
 ###################
