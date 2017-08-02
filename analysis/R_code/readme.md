@@ -6,7 +6,7 @@ This directory contains all of the miscellaneous R scripts that have gone into m
 
 I need to check that all the code here still runs in this newly organized repo, annotate what is important in this readme, and move what is not important to the archive.
 
- - [ ] Everything in the main directory.
+- [ ] Everything in the main directory.
 
  Also, in data wrangling:
 

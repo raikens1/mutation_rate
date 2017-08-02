@@ -43,6 +43,27 @@ gw_7mer_counts <- read_delim("gw_counts/gw_7mer_counts.txt",
 ```
 
 
+```{r X data upload, message = FALSE}
+# Count dataframes
+AFR_3mer_counts_noX <- read.delim('3mer/no_X/AFR_3mer_counts_noX.txt')
+EUR_3mer_counts_noX <- read.delim('3mer/no_X/EUR_3mer_counts_noX.txt')
+EAS_3mer_counts_noX <- read.delim('3mer/no_X/EAS_3mer_counts_noX.txt')
+SAS_3mer_counts_noX <- read.delim('3mer/no_X/SAS_3mer_counts_noX.txt')
+COSMO_3mer_counts_noX <- read.delim('3mer/no_X/COSMO_3mer_counts_noX.txt')
+
+AFR_5mer_counts_noX <- read.delim('5mer/no_X/AFR_5mer_counts_noX.txt')
+EUR_5mer_counts_noX <- read.delim('5mer/no_X/EUR_5mer_counts_noX.txt')
+EAS_5mer_counts_noX <- read.delim('5mer/no_X/EAS_5mer_counts_noX.txt')
+SAS_5mer_counts_noX <- read.delim('5mer/no_X/SAS_5mer_counts_noX.txt')
+COSMO_5mer_counts_noX <- read.delim('5mer/no_X/COSMO_5mer_counts_noX.txt')
+
+AFR_7mer_counts_noX <- read.delim('7mer/no_X/AFR_7mer_counts_noX.txt')
+EUR_7mer_counts_noX <- read.delim('7mer/no_X/EUR_7mer_counts_noX.txt')
+EAS_7mer_counts_noX <- read.delim('7mer/no_X/EAS_7mer_counts_noX.txt')
+SAS_7mer_counts_noX <- read.delim('7mer/no_X/SAS_7mer_counts_noX.txt')
+COSMO_7mer_counts_noX <- read.delim('7mer/no_X/COSMO_7mer_counts_noX.txt')
+```
+
 # Methodology
 
 In order to develop a formal statistical framework for understanding global polymorphism, we designed a series of multinomial models after Aggarwala and Voight, which capture different levels of mutation rate variation. First, we defined cosmopolitan SNPs to be those which are shared between two or more of the African, European, South Asian, and East Asian 1,000 genomes samples. For a given population at a given sequence context, the probability of recurrent mutation is assumed to be zero. Under these assumptions, we have seven mutually exclusive possible events:
@@ -54,6 +75,10 @@ In order to develop a formal statistical framework for understanding global poly
 If the context appears $N$ times in the genome, polymorphism in this population follows a multinomial distribution with size $N$ and parameters $c_1$, $c_2$, and $c_3$ for the probabilities of each cosmopolitan polymorphism, and $p_1$, $p_2$, and $p_3$ for the three private polymorphisms.
 
 If the mutation rate at this context had not changed in recent evolutionary time for this population, then we would expect the probabilities of each private polymorphism type to be proportional to the probabilities of the corresponding cosmopolitan polymorphism types.  It remains to estimate this proportionality constant, which we denote $\alpha$.  In a null model ($H_0$), mutation rate has not changed at any context, so $\alpha$ for a given population is just the ratio of total private polymorphisms to total cosmopolitan polymorphisms over all contexts. Alternatively ($H_1$), if mutation rate has changed at specific contexts but the relative substitution probabilities for the alternative alleles is fixed, then a unique $\alpha$ must be estimated from the private to cosmopolitan ratio of polymorphisms at each context.  Finally, in a model which allows for maximal polymorphism variation ($H_2$), mutation rate may have changed even between different polymorphism types at same context (e.g. C/T, C/A, and C/G polymorphism at a C context). In this model, the private substitution rates are not proportional to the cosmopolitan rates even at a context-specific level, and the private rates must be estimated independently for each possible mutation.
+
+## X chromosome
+
+Because of certain features of demography and sampling, we expect that there will be fewer polymorphisms observed on the X chromosome than on the autosomes, even if the mutation rates are the same.  For these reasons, it is desirable to exclude the X chromosome from the model for polymorphism we apply to the autosomes.
 
 # Likelihood testing
 
