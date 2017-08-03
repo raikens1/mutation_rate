@@ -1,0 +1,451 @@
+---
+title: "Figures for paper"
+author: "Rachael 'Rocky' Aikens, Voight Lab"
+date: "August 3, 2017"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE)
+knitr::opts_knit$set(root.dir = '../../data')
+
+library(ggplot2)
+library(gplots)
+library(stats)
+library(readr)
+library(dplyr)
+library(knitr)
+require(reshape2)
+library(gridExtra)
+library(grid)
+require("ggrepel")
+```
+
+# Figure 1
+
+## A: heatmap of all 3mer mutation types
+
+To make this figure, we need the following **functions** and *datasets*:
+
+* **norm/norm.byrow** need these to normalize the data before making a heatmap
+* **make.heatmap** calls heatmap2 to make a heatmap.  The function defined herein is slightly different from the one in the heatmaps_report workflow; there are some small modifications to format the dendrogram and plot area specifically for this figure.
+* *3mer rate matrix* saved in 'rate_profiles/rates_3mer.txt'
+
+```{r F1A setup data}
+# data 
+rates.3mer <- as.matrix(read.delim("rate_profiles/rates_3mer.txt"))
+
+subpops.names <- c("TSI", "IBS", "CEU", "GBR", "FIN", "STU", "ITU", "BEB", "GIH", "PJL",
+                   "ESN", "GWD", "LWK", "MSL", "YRI", "CDX", "CHB", "CHS", "JPT", "KHV")
+```
+
+```{r F1A setup methods}
+# helper function that normalizes a vector by z or L1 method
+norm <- function(vec, method = c("z", "L1", "fdiff")){
+  
+  if (method == "L1"){ # normalize so vector sums to 1
+    u <- vec/sum(abs(vec))}
+  else if (method == "z"){ # normalize to mean 0, variance 1
+    u <- (vec - mean(vec))/sd(vec)}
+  else # normalize to fold change compared to mean
+    u <- vec/mean(vec)
+  return(u)
+}
+
+# normalizes a whole dataset by calling norm on each row
+norm.byrow <- function(mat, m){
+  data <- t(apply(mat,1,norm, method = m))
+  return(data)
+}
+
+# makes a heatmap of a matrix and returns the row dendrogram as an object
+# this function is rewritten for making figure 1 of my paper. Won't work for most other applications.
+make.heatmap <- function(data, logunits = T){
+  
+  complete <- apply(data, 1, function(row) all(row != 0) & all(!is.na(row)))
+  data <- data[complete,]
+  
+  if (logunits == T) {
+    data <- log2(data)
+  }
+  
+  dr <- hclust(dist(data))
+  dc <- hclust(dist(t(data)))
+  
+  weights.dr <- ifelse(rownames(data) == "TCC->T", yes = 10, no = 0) + ifelse(rownames(data) == "GAT->T", yes = 9, no = 0) +
+                ifelse(rownames(data) == "ACG->T", yes = 8, no = 0) + ifelse(rownames(data) == "AAC->C", yes = 7, no = 0)
+    
+  
+  dr.ordered <- reorder(as.dendrogram(dr), wts = weights.dr, agglo.FUN = mean)
+  
+  heatmap.2(data, Rowv = dr.ordered, Colv = as.dendrogram(dc),
+            trace = 'none', col=colorRampPalette(c('blue', "white", 'red'))(n = 1000),
+            labRow = F,
+            density.info = 'none', key.xlab = "fold differece vs. mean\n(log base 2 scale)",
+            key.title = NA, keysize = 0.5, key.par = list(cex=0.65),
+            lhei = c(1,5.5), lwid = c(1,4))
+  return(dr)
+}
+```
+
+```{r F1A preprocess data}
+norm.3mer.rates <- norm.byrow(rates.3mer, "fdiff")
+```
+
+```{r F1A make, fig.height=6.21, fig.width=5.86}
+dr <- make.heatmap(norm.3mer.rates)
+```
+
+## BCD: CI plots of polymorphism clusters
+
+To make these panels, I need the following **functions** and *datasets*:
+
+* **CI.plot.bygroup** Makes a plot of the rates of a group of mutations.  Will bug out if the mutations are of the same context, although that's not a problem for these figures.
+
+* *3mer count dataframes for all ancestral continental groups*
+
+```{r F1BCD setup data}
+AFR_3mer_counts <- read_delim("3mer/AFR_3mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+EUR_3mer_counts <- read_delim("3mer/EUR_3mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+EAS_3mer_counts <- read_delim("3mer/EAS_3mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+SAS_3mer_counts <- read_delim("3mer/SAS_3mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+```
+
+```{r F1BCD setup methods}
+CI.plot.bygroup <- function(AFR, EUR, EAS, SAS, muts, groupname = "mutation group") {
+  #NOTE: muts must all be from different contexts.  Otherwise this will do weird things.
+  
+  muts.i <- which(is.element(AFR$Context, muts))
+  popnames <- c("Africa","Europe", "South\nAsia", "East\nAsia")
+  colors <- c("forestgreen", "darkblue", "magenta","red")
+  
+  #have to do a silly workaround or R will sort popnames alphanumerically
+  poplabs <- factor(popnames, levels= popnames)
+  
+  #cycle through pops and get counts for mut
+  counts <- rep(0, 4)
+  sums <- rep(0, 4)
+  pops <- list(AFR, EUR, SAS, EAS)
+  
+  for (i in 1:length(pops)){
+    counts[i] <- sum(pops[[i]]$Count[muts.i]) #number of obersvations of muts in pop
+    sums[i]<- sum(pops[[i]]$Count)#total polymorphisms in pop
+  }
+  
+  #estimate substitution probability
+  N.c <- sum(AFR$context_in_genome[muts.i])
+  theta <- counts/N.c
+  L <- theta - 1.96*sqrt(theta*(1-theta)/N.c)
+  U <- theta + 1.96*sqrt(theta*(1-theta)/N.c)
+  
+  #normalize to rate estimate; assume genome wide subsitution probability is measured without error
+  norm <- 1.2E-8*(sum(as.numeric(AFR$context_in_genome))/3)/sums
+  
+  df <- data.frame(cbind(popnames, theta*norm, L*norm, U*norm))
+  plotcol <- reorder(colors, theta*norm)
+  
+  CI.plot <- ggplot(df, aes(reorder(popnames, c(1,2,3,4)), theta*norm)) +
+    geom_point(size = 3, color = plotcol) +
+    geom_errorbar(aes(ymax = U*norm, ymin = L*norm), color = plotcol, size =.75)+
+    labs(title = paste("Estimated mutation\nrate of", groupname), y = NULL) + #y axis label
+    theme(axis.text.x = element_text(size = rel(.9)), axis.title.x = element_blank(), #adjust text sizes
+          axis.title.y = element_text(size = rel(.9)), axis.text.y = element_text(size = rel(.9), angle = 0, hjust = 0.5), title = element_text(size = rel(.7)),
+          legend.position = 'none')
+  return(CI.plot)
+}
+
+```
+
+```{r F1BCD make, fig.height=2.5, fig.width=6.5}
+s1 <- c("TCT->T", "ACC->T", "TCA->T", "CCC->T", "ACT->T", "TCC->T")
+a <- CI.plot.bygroup(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, s1, "signature 1")
+
+s2 <- c("GAT->T", "ACC->A", "GAC->T")
+b <- CI.plot.bygroup(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, s2, "signature 2")
+
+s3 <-c("ACG->T", "CCG->T", "GCG->T", "TCG->T")
+c <- CI.plot.bygroup(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, s3, "signature 3")
+
+grid.arrange(a,b,c, ncol = 3)
+```
+
+# E: CI plots for signal 4
+
+This figure was harder to make, and we'll probably revamp the way we do it.  Once we've figured that out, I'll add that code here.  For now, this figure requires the following:
+
+* **CI.plotsubpop.bygroup** same as CI.plot.bygroup, but works for more populations than just the ancestral continental groups.
+* *3mer count dataframes for all ancestral continental groups (except EAS)*
+* *3mer count dataframes for all EAS subpopulations*
+
+```{r F1E setup data}
+# EAST ASIA
+CHB_EAS_3mer_counts <- read_delim("subpops/3mer/CHB_EAS_3mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+JPT_EAS_3mer_counts <- read_delim("subpops/3mer/JPT_EAS_3mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+CHS_EAS_3mer_counts <- read_delim("subpops/3mer/CHS_EAS_3mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+CDX_EAS_3mer_counts <- read_delim("subpops/3mer/CDX_EAS_3mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+KHV_EAS_3mer_counts <- read_delim("subpops/3mer/KHV_EAS_3mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+```
+
+```{r F1E setup methods}
+CI.plot.subpop.bygroup <- function(subpops, muts, popnames, colors = colors.ancestral, groupname = "mutation group"){
+  n.pops <- length(subpops)
+  mut.i <- which(is.element(subpops[[1]]$Context, muts))
+  
+  #have to do a silly workaround or R will sort popnames alphanumerically
+  poplabs <- factor(popnames, levels= popnames)
+  
+  #cycle through subpops and get counts for mut
+  counts <- rep(0, n.pops)
+  sums <- rep(0, n.pops)
+  for (i in 1:n.pops){
+    counts[i] <- sum(subpops[[i]]$Count[mut.i])
+    sums[i]<- sum(subpops[[i]]$Count)
+  }
+  
+  #estimate substitution probability
+  N.c <- sum(subpops[[1]]$context_in_genome[mut.i]) 
+  theta <- counts/N.c
+  L <- theta - 1.96*sqrt(theta*(1-theta)/N.c)
+  U <- theta + 1.96*sqrt(theta*(1-theta)/N.c)
+  
+  #normalize to rate estimate; assume genome wide subsitution probability is measured without error
+  norm <- 1.2E-8*(sum(as.numeric(subpops[[1]]$context_in_genome))/3)/sums
+  
+  
+  df <- data.frame(cbind(poplabs, theta*norm, L*norm, U*norm))
+  plotcol <- reorder(colors, theta*norm)
+  
+  ggplot(df, aes(reorder(popnames, poplabs), theta*norm)) +
+    geom_point(size = 3, color = plotcol) +
+    geom_errorbar(aes(ymax = U*norm, ymin = L*norm), color = plotcol, size = .75)+
+    labs(y = paste("Estimated mutation rate of ", groupname)) + #y axis label
+    theme(axis.text.x = element_text(size = rel(1), angle = 45, hjust = 1), axis.title.x = element_blank(), #adjust text sizes
+          axis.title.y = element_text(size = rel(.8)), axis.text.y = element_text(size = rel(.9)),
+          legend.position = 'none')
+}
+```
+
+```{r F1E format data}
+subpops1E <- list(AFR_3mer_counts, EUR_3mer_counts, SAS_3mer_counts, CDX_EAS_3mer_counts, KHV_EAS_3mer_counts, CHS_EAS_3mer_counts, CHB_EAS_3mer_counts, JPT_EAS_3mer_counts)
+colors1E <- c("forestgreen", "darkblue", "magenta", rep("red", 5))
+popnames1E <- c("Africa", "Europe", "South Asia", "CDX", "KHV", "CHS", "CHB", "JPT")
+muts1E <- c("CAC->C", "TAT->T", "GAC->C", "AAC->C", "TAC->C")
+```
+
+```{r F1E make, fig.height=2.5, fig.width = 2.5}
+CI.plot.subpop.bygroup(subpops1E, muts1E, popnames1E, colors1E, "signature 4")
+```
+
+# Figure 2
+
+## AB: scatter plot examples
+
+To make these figures, I need
+
+* **subrate.scplot** makes a scatterplot of all 7mers with a given 3mer subtype.
+* *7mer count dataframes for JPT and CDX*
+* *7mer count dataframes for East Asia and Europe*
+
+```{r F2AB setup data}
+EUR_7mer_counts <- read_delim("7mer/EUR_7mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+EAS_7mer_counts <- read_delim("7mer/EAS_7mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+JPT_EAS_7mer_counts <- read_delim("subpops/7mer/JPT_EAS_7mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+CDX_EAS_7mer_counts <- read_delim("subpops/7mer/CDX_EAS_7mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+```
+
+```{r F2AB setup methods}
+# given: count1 and count2: pop-specific polymorphism dataframes; Mut: 3mer subcontext of interest,
+# generates a scatter plot of rate for mut in population 1 by population 2
+subrate.scplot <- function(count1, count2, mut, pops = c("Pop 1", "Pop 2"), label = c(), lm = F){
+  pop1.mut <- subset(count1, count1$X3mer == mut)
+  pop2.mut <- subset(count2, count2$X3mer == mut)
+  sample.size <- pop1.mut$Count + pop2.mut$Count
+  n <- nchar(mut)
+  ref <- substr(mut, 1, n-3)
+  alt <- substr(mut, n, n)
+  
+  #make plot
+  p_plot <- qplot(pop1.mut$Rate, pop2.mut$Rate) +
+    labs(x = bquote(.(ref)%->%.(alt) ~ .(paste("in", pops[1]))), y = bquote(.(ref)%->%.(alt) ~ .(paste("in", pops[2])))) +
+    theme(legend.title = element_blank(), 
+          legend.justification= c(1,0), 
+          legend.position=c(1,0),
+          legend.text = element_text(size = rel(0.75)),
+          legend.key.size = unit(.4, "cm"),
+          axis.text=element_text(size=8),
+          text = element_text(size = 9))+
+    geom_point(aes(colour = log(base = 10, x = sample.size)), size = 1.25) + 
+    scale_colour_gradient(low = "orange", high = "blue")+
+    geom_abline(aes(intercept=0,slope=1), size = .5) + 
+    coord_fixed(ratio = 1, 
+                xlim = c(0, max(pop1.mut$Rate, pop2.mut$Rate)),
+                ylim = c(0, max(pop1.mut$Rate, pop2.mut$Rate)))
+  
+  if (lm){
+    mod1 <- lm(pop2.mut$Rate ~ pop1.mut$Rate)
+    pred <- predict(mod1, interval = "prediction")
+    
+    p_plot <- p_plot + stat_smooth(method = lm, se = FALSE, fullrange = T)+
+      geom_line(aes(y = pred[,2]), color = "red", linetype = "dashed", size = 1)+
+      geom_line(aes(y = pred[,3]), color = "red", linetype = "dashed", size = 1)
+  }
+  
+  if (length(label!=0)){
+    #set aside contexts to label
+    dat <- data.frame(cbind(pop1.mut$Context, pop1.mut$Rate, pop2.mut$Rate), stringsAsFactors = F)
+    lab <- subset(dat,  is.element(dat[,1], label))
+    
+    if (length(lab[,1]!=0)){
+      lab[,c(2,3)] <- sapply(lab[,c(2,3)], as.numeric)
+      p_plot <- p_plot + geom_label_repel(data = lab, aes(lab[,2], lab[,3],
+                                   label = lab[,1]), size = 2.5, box.padding = unit(1, "lines"),
+                                   point.padding = unit(.3, "lines"),
+                                   nudge_x = 1.5e-9, nudge_y = 1.5e-9, color = "purple4")
+    }
+  }
+
+  return(p_plot)
+}
+
+format.mut <- function(mut){
+  n <- nchar(mut)
+  ref <- substr(mut, 1, n-3)
+  alt <- substr(mut, n, n)
+  return(expression(ref %->% alt))
+}
+```
+
+```{r F2AB make}
+a <- subrate.scplot(CDX_EAS_7mer_counts, JPT_EAS_7mer_counts, "ACG->T", pops = c("Chinese Dai in Xishuangbana", "Japanese in Tokyo"))
+b <- subrate.scplot(EAS_7mer_counts, EUR_7mer_counts, "TCC->T", pops = c("East Asia", "Europe"))
+grid.arrange(a, b, ncol = 2)
+```
+
+# Figure 3
+
+## A: table of X enriched polymorphisms
+
+We can obtain the first set of fdr-adjusted p values using a pairwise chi squared test between CDX and JPT 7mers whose 3mer subcontext is a part of signal 4.
+
+```{r F3A data}
+gw_7mer_counts <- read_delim("gw_counts/gw_7mer_counts.txt", 
+                             "\t", escape_double = FALSE, trim_ws = TRUE)
+```
+
+
+```{r pairwise.chi, echo = F}
+# calculates homogeneity test p values for pairwise comparisons of two dfs of counts
+pairwise.chi <- function(counts.1, counts.2, filter = T){
+  n.contexts = length(counts.1$Context)
+  result <- data.frame(matrix(ncol=2,nrow=n.contexts))
+  colnames(result) <- c("Context", "p")
+  
+  result$Context <- counts.1$Context
+  sum.1 <- sum(counts.1$Count)
+  sum.2 <- sum(counts.2$Count)
+
+  for (i in 1:n.contexts){
+    c.a <- c(counts.1$Count[i], counts.2$Count[i])
+    c.b <- c(sum.1, sum.2) - c.a
+    data <- cbind(c.a, c.b)
+    warning <- is(tryCatch(chisq.test(data), warning = function(w) w), "warning")
+    if (filter == T & warning){
+      result$p[i] <- NA
+    }
+    else result$p[i] <- chisq.test(data)$p.value
+  }
+  
+  return(result)
+}
+```
+
+```{r JPTCDX 7mers test, echo = F}
+p.CDXJPT <- pairwise.chi(CDX_EAS_7mer_counts, JPT_EAS_7mer_counts)
+p.CDXJPT <- subset(p.CDXJPT, is.element(CDX_EAS_7mer_counts$X3mer, c("AAC->C", "CAC->C", "TAT->T", "GAC->C", "TAC->C")))
+p.CDXJPT$fdr <- p.adjust(p.CDXJPT$p, method = "fdr")
+p.CDXJPT <- p.CDXJPT[order(p.CDXJPT$fdr),]
+kable(subset(p.CDXJPT, p.CDXJPT$fdr < 0.05), row.names = F)
+```
+Next, we have to run a test for X enrichment, described in the paper.
+```{r def preprocessor, echo = F}
+X.preprocessing <- function(counts, gw, muts = c()){
+  
+  # if muts not specified, assume whole dataframe is used
+  if (length(muts) == 0){
+    muts <- counts$Context
+  }
+  counts <- subset(counts, is.element(counts$Context, muts))
+  autosomes <-counts$Count-counts$chrX
+  
+  # construct data frame
+  result <- data.frame(matrix(ncol=3,nrow=length(counts$Context)))
+  colnames(result) <- c("Context", "Autosomes", "X")
+  result$Context <- counts$Context
+  result$Autosomes <- autosomes
+  result$X <- counts$chrX
+  
+  # add gw_sites to data
+  result$Autosomal_sites <- rep(0, length(result$Context))
+  result$X_sites <- rep(0, length(result$Context))
+  
+  for (i in 1:length(result$Context)){
+    mut <- as.character(result$Context[i])
+    context <- substr(mut, 1, nchar(mut)-3)
+    j <- which(gw$Context == context)
+    result$Autosomal_sites[i] <- gw$GW_total[j]- gw$X[j]
+    result$X_sites[i] <- gw$X[j]
+  }
+
+  return(result)
+}
+```
+
+
+```{r, setup for X test, echo = F}
+JPT7mers <- subset(p.CDXJPT$Context, p.CDXJPT$fdr < 0.05)
+data <- X.preprocessing(EAS_7mer_counts, gw_7mer_counts, c())
+```
+
+```{r x test, echo = F}
+data$alpha <- rep(1, length(data$Context))
+data$p.0 <- rep(0, length(data$Context))
+data$p.MLE <- rep(0, length(data$Context))
+data$p <- rep(1, length(data$Context))
+
+muts.X <- sum(data$X)
+sites.X <- sum(data$X_sites)
+muts.A <- sum(data$Autosomes)
+sites.A <- sum(data$Autosomal_sites)
+
+data <- subset(data, is.element(data$Context, JPT7mers))
+
+#remove the data from these sites from background before estimating correction
+muts.X <- muts.X - sum(data$X)
+sites.X <- sites.X - sum(data$X_sites)
+muts.A <- muts.A - sum(data$Autosomes)
+sites.A <- sites.A - sum(data$Autosomes)
+
+alpha <- (muts.X/sites.X)/(muts.A/sites.A)
+
+for (i in 1:length(data$Context)){
+  # estimate parameters and run test
+  data$alpha[i] <- alpha
+  p.0 <- alpha*(data$Autosomes[i]/data$Autosomal_sites[i])
+  data$p.0[i] <- p.0
+  data$p.MLE[i] <- data$X[i]/data$X_sites[i]
+  
+  data$p[i] <- binom.test(data$X[i], n = data$X_sites[i], p = p.0, alternative = "greater")$p.value
+  
+  if (data$Autosomes[i]< 15){
+    data$p[i] <- 1
+  }
+  
+}
+kable(data, digits = 6, row.names = F)
+```

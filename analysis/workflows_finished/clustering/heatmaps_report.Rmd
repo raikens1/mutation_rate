@@ -116,37 +116,6 @@ get.3mer.subcontext.data <- function(rates, muts, labels){
   return(data)
 }
 ```
- 
-```{r specialized heatmap, echo = F, eval = F}
-# makes a heatmap of a matrix and returns the row dendrogram as an object
-# this function is rewritten for making figure 1 of my paper. Won't work for most other applications.
-make.heatmap <- function(data, logunits = T){
-  
-  complete <- apply(data, 1, function(row) all(row != 0) & all(!is.na(row)))
-  data <- data[complete,]
-  
-  if (logunits == T) {
-    data <- log2(data)
-  }
-  
-  dr <- hclust(dist(data))
-  dc <- hclust(dist(t(data)))
-  
-  weights.dr <- ifelse(rownames(data) == "TCC->T", yes = 10, no = 0) + ifelse(rownames(data) == "GAT->T", yes = 9, no = 0) +
-                ifelse(rownames(data) == "ACG->T", yes = 8, no = 0) + ifelse(rownames(data) == "AAC->C", yes = 7, no = 0)
-    
-  
-  dr.ordered <- reorder(as.dendrogram(dr), wts = weights.dr, agglo.FUN = mean)
-  
-  heatmap.2(data, Rowv = dr.ordered, Colv = as.dendrogram(dc),
-            trace = 'none', col=colorRampPalette(c('blue', "white", 'red'))(n = 1000),
-            density.info = 'none', key.xlab = "fold differece vs. mean\n(log base 2 scale)",
-            key.title = NA, keysize = 0.5, key.par = list(cex=0.65),
-            lhei = c(1,5.5), lwid = c(1,4))
-  return(dr)
-}
-
-```
 
  
 ```{r def heatmaps, echo = F}

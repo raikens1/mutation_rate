@@ -282,10 +282,13 @@ subrate.scplot <- function(count1, count2, mut, pops = c("Pop 1", "Pop 2"), labe
   pop1.mut <- subset(count1, count1$X3mer == mut)
   pop2.mut <- subset(count2, count2$X3mer == mut)
   sample.size <- pop1.mut$Count + pop2.mut$Count
+  n <- nchar(mut)
+  ref <- substr(mut, 1, n-3)
+  alt <- substr(mut, n, n)
   
   #make plot
   p_plot <- qplot(pop1.mut$Rate, pop2.mut$Rate) +
-    labs(x = paste(mut, " in ", pops[1]), y = paste(mut, " in ", pops[2])) +
+    labs(x = bquote(.(ref)%->%.(alt) ~ .(paste("in", pops[1]))), y = bquote(.(ref)%->%.(alt) ~ .(paste("in", pops[2])))) +
     theme(legend.title = element_blank(), 
           legend.justification= c(1,0), 
           legend.position=c(1,0),
