@@ -60,7 +60,7 @@ This folder contains markdown files, formatted data files, compiled pdfs and plo
 
 ### helper_code
 
-The majority of my workhorse python and shell scripts can be found here. They help parse through filtered .vcf files to extract information that I analyze downstream in R (see the 'analysis' directory)
+The majority of my workhorse python and shell scripts can be found here. They help parse through filtered .vcf files to extract information that I analyze downstream in R (see the 'analysis' directory).
 
 ### vcf_filtration
 
