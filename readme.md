@@ -66,6 +66,10 @@ The majority of my workhorse python and shell scripts can be found here. They he
 
 This directory contains reference files and shell scripts used to filter source vcf files from 1kg.
 
+### paper
+
+This directory contains the most up-to-date version of my manuscript, supplement, and figures.
+
 ## A developer note for Rocky
 
 I do the work for this analysis on the cluster and on my local machine.  Certain .gitignore files and directories on both of these machines may be relevant for my purposes but not synced to the github because they aren't relevant to the main manuscript or supplement, or they are unfinished, outdated or too large.  In 'helper_code' and 'vcf_filtration,' these files can be found on the cluster.  In 'analysis,' these files are found on the Voightlab machine.
