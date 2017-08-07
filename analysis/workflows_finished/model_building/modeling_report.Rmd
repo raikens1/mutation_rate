@@ -3,8 +3,8 @@ title: "Model Building"
 author: "Rachael 'Rocky' Aikens, Voight Lab"
 date: "July 28, 2017"
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -13,7 +13,10 @@ knitr::opts_knit$set(root.dir = '../../data')
 library(readr)
 ```
 
-```{r data upload, message = FALSE}
+```{r data upload, message = FALSE, eval = FALSE}
+# change to eval = TRUE to perform model building calculations
+# on data including the X chromsome
+
 # Count dataframes
 AFR_3mer_counts <- read.delim('3mer/AFR_3mer_counts.txt')
 EUR_3mer_counts <- read.delim('3mer/EUR_3mer_counts.txt')
@@ -43,7 +46,7 @@ gw_7mer_counts <- read_delim("gw_counts/gw_7mer_counts.txt",
 ```
 
 
-```{r X data upload, message = FALSE}
+```{r X data upload noX, message = FALSE}
 # Count dataframes
 AFR_3mer_counts_noX <- read.delim('3mer/no_X/AFR_3mer_counts_noX.txt')
 EUR_3mer_counts_noX <- read.delim('3mer/no_X/EUR_3mer_counts_noX.txt')
@@ -62,6 +65,14 @@ EUR_7mer_counts_noX <- read.delim('7mer/no_X/EUR_7mer_counts_noX.txt')
 EAS_7mer_counts_noX <- read.delim('7mer/no_X/EAS_7mer_counts_noX.txt')
 SAS_7mer_counts_noX <- read.delim('7mer/no_X/SAS_7mer_counts_noX.txt')
 COSMO_7mer_counts_noX <- read.delim('7mer/no_X/COSMO_7mer_counts_noX.txt')
+
+#gw_count references 
+gw_3mer_counts_noX <- read_delim("gw_counts/no_X/gw_3mer_counts_noX.txt", 
+                             "\t", escape_double = FALSE, trim_ws = TRUE)
+gw_5mer_counts_noX <- read_delim("gw_counts/no_X/gw_5mer_counts_noX.txt", 
+                             "\t", escape_double = FALSE, trim_ws = TRUE)
+gw_7mer_counts_noX <- read_delim("gw_counts/no_X/gw_7mer_counts_noX.txt", 
+                             "\t", escape_double = FALSE, trim_ws = TRUE)
 ```
 
 # Methodology
@@ -78,7 +89,7 @@ If the mutation rate at this context had not changed in recent evolutionary time
 
 ## X chromosome
 
-Because of certain features of demography and sampling, we expect that there will be fewer polymorphisms observed on the X chromosome than on the autosomes, even if the mutation rates are the same.  For these reasons, it is desirable to exclude the X chromosome from the model for polymorphism we apply to the autosomes.
+Because of certain features of demography and sampling, we expect that there will be fewer polymorphisms observed on the X chromosome than on the autosomes, even if the mutation rates are the same.  For these reasons, it is desirable to exclude the X chromosome from the model for polymorphism we apply to the autosomes.  The code that follows will perform likelihood testing and parameter estimation both without the X chromosome.  The same code can be run on the count dataframes including X in the same way. 
 
 # Likelihood testing
 
@@ -159,21 +170,23 @@ likelihood.test <- function(priv, cosmo, gw, nmer){
 
 
 ```{r run likelihood.test}
+# remove _noX extension on variable names to run including X
+
 # run for each pop, for each kmer
-LRT.3mer.EUR <- likelihood.test(EUR_3mer_counts, COSMO_3mer_counts, gw_3mer_counts, nmer = 3)
-LRT.3mer.AFR <- likelihood.test(AFR_3mer_counts, COSMO_3mer_counts, gw_3mer_counts, nmer = 3)
-LRT.3mer.EAS <- likelihood.test(EAS_3mer_counts, COSMO_3mer_counts, gw_3mer_counts, nmer = 3)
-LRT.3mer.SAS <- likelihood.test(SAS_3mer_counts, COSMO_3mer_counts, gw_3mer_counts, nmer = 3)
+LRT.3mer.EUR <- likelihood.test(EUR_3mer_counts_noX, COSMO_3mer_counts_noX, gw_3mer_counts_noX, nmer = 3)
+LRT.3mer.AFR <- likelihood.test(AFR_3mer_counts_noX, COSMO_3mer_counts_noX, gw_3mer_counts_noX, nmer = 3)
+LRT.3mer.EAS <- likelihood.test(EAS_3mer_counts_noX, COSMO_3mer_counts_noX, gw_3mer_counts_noX, nmer = 3)
+LRT.3mer.SAS <- likelihood.test(SAS_3mer_counts_noX, COSMO_3mer_counts_noX, gw_3mer_counts_noX, nmer = 3)
 
-LRT.5mer.EUR <- likelihood.test(EUR_5mer_counts, COSMO_5mer_counts, gw_5mer_counts, nmer = 5)
-LRT.5mer.AFR <- likelihood.test(AFR_5mer_counts, COSMO_5mer_counts, gw_5mer_counts, nmer = 5)
-LRT.5mer.EAS <- likelihood.test(EAS_5mer_counts, COSMO_5mer_counts, gw_5mer_counts, nmer = 5)
-LRT.5mer.SAS <- likelihood.test(SAS_5mer_counts, COSMO_5mer_counts, gw_5mer_counts, nmer = 5)
+LRT.5mer.EUR <- likelihood.test(EUR_5mer_counts_noX, COSMO_5mer_counts_noX, gw_5mer_counts_noX, nmer = 5)
+LRT.5mer.AFR <- likelihood.test(AFR_5mer_counts_noX, COSMO_5mer_counts_noX, gw_5mer_counts_noX, nmer = 5)
+LRT.5mer.EAS <- likelihood.test(EAS_5mer_counts_noX, COSMO_5mer_counts_noX, gw_5mer_counts_noX, nmer = 5)
+LRT.5mer.SAS <- likelihood.test(SAS_5mer_counts_noX, COSMO_5mer_counts_noX, gw_5mer_counts_noX, nmer = 5)
 
-LRT.7mer.EUR <- likelihood.test(EUR_7mer_counts, COSMO_7mer_counts, gw_7mer_counts, nmer = 7)
-LRT.7mer.AFR <- likelihood.test(AFR_7mer_counts, COSMO_7mer_counts, gw_7mer_counts, nmer = 7)
-LRT.7mer.EAS <- likelihood.test(EAS_7mer_counts, COSMO_7mer_counts, gw_7mer_counts, nmer = 7)
-LRT.7mer.SAS <- likelihood.test(SAS_7mer_counts, COSMO_7mer_counts, gw_7mer_counts, nmer = 7)
+LRT.7mer.EUR <- likelihood.test(EUR_7mer_counts_noX, COSMO_7mer_counts_noX, gw_7mer_counts_noX, nmer = 7)
+LRT.7mer.AFR <- likelihood.test(AFR_7mer_counts_noX, COSMO_7mer_counts_noX, gw_7mer_counts_noX, nmer = 7)
+LRT.7mer.EAS <- likelihood.test(EAS_7mer_counts_noX, COSMO_7mer_counts_noX, gw_7mer_counts_noX, nmer = 7)
+LRT.7mer.SAS <- likelihood.test(SAS_7mer_counts_noX, COSMO_7mer_counts_noX, gw_7mer_counts_noX, nmer = 7)
 ```
 
 ```{r write LRTdata to file, message = F}

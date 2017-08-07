@@ -12,6 +12,8 @@ There are a handful of main file types which are important here.  I save all my 
 
 - *rate matricies* Saved as 'rates_kmer.txt' for a given kmer.  These are piped into heatmaps2 to make heatmaps of polymorphism types as in Figure 1A. For each kmer polymorphism type, these files show the inferred private mutation rate (per generation per site) across each of the 20 nonadmixed ancestral populations from 1kg (i.e. all populations from EUR, SAS, and EAS, and all from AFR except for ACB and ASW).
 
+**Note**: *Any file saved in a 'no_X' subdirectory or with '_noX' at the end of the file name was generated on the Autosomes only.*  These files are important for developing our model for polymorphism, since X must be excluded from the parameter estimation
+
 ## Contents
 
 ### 3mer-5mer-7mer
