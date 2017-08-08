@@ -60,7 +60,9 @@ class Predictor(object):
         self.mean = 0
 
         self.readProb(modelfile) # build self.prob
-        self.flank = (len(self.prob.keys()[0])-1)/2
+        self.flank = (len(self
+            .prob.keys()[0])-1)/2
+        print self.prob
 
     # initialize self.prob and self.flank from prob file
     def readProb(self, modelfile):
