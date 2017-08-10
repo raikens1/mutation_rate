@@ -13,6 +13,7 @@ There are a couple main scripts here:
  - **class_counter** This defines the counter class relied upon by count_contexts.py
  - **get_context.py** Defines a simple function that returns the sequence context of a variant based on hg19.  I didn't archive this because I thought it might come in handy someday.
  - **predict_polymorphism.py** Defines a predictor class and uses input model parameters to predict the number of polymorphisms expected in the regions specified by and input bedfile. The count of polymorphisms follows a poisson binomial (poibin), so this tool writes the poibin parameters to file for hypothesis testing in R.
+ - **count_all_7mers.sh** this is a quick script that lets me run count_contexts on all of the SNP lists in a directory.  It needs some brushing up before it will be serviceable.
 
 ## ref_files
 
