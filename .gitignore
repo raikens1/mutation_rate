@@ -6,7 +6,7 @@ helper_code/playground
 *temp*
 sandbox*
 *folded_counts.txt
-*chrom_counts*
+*chrom_counts/*
 vcf_filtration/filtered_1kg_v3
 *.params
 *.ipynb

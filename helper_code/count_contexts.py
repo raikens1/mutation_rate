@@ -30,6 +30,9 @@ def main():
 		log.write("Tracking progress for this count job.\n")
 
 	counter = Counter(int(argv[2]))
+
+	print counter.counts
+	print len(counter.counts)
 	counter.count(infile)
 	counter.write_counts(infile[:-3] + "_folded_counts.txt")
 

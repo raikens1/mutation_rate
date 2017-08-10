@@ -6,34 +6,34 @@ from itertools import product
 
 usage = """
 RA, 8/10/2017
-count_gw_contexts.py
+site_counter.py
 V1
 =====================================================================
 Given a fasta file, a bed file, and a number of flanking nucleotides
 Counts the number of contexts within those inclusion regions
 	within that sequence context paradigm.
 =====================================================================
-USEAGE: count_gw_contexts.py BED FLANK
+USEAGE: site_counter.py BED FLANK
 """
 """
 Acknowledgements: This code makes use of some lines helpfully offered
 by Onur Yoruk based on his replication timing work!
 """
 
-# TODO:
-# - [ ] write main function
-# - [ ] debug
 
 def main():
     print usage
     if len(argv) == 1:
         print "No arguements specified.  Exiting!"
         exit(0)
-    c = FCount(int(argv[2]))
-    len(c.counts)
+    c = SCount(int(argv[2]))
+
+    c.count(argv[1])
+    outfile = argv[1].split("/")[-1].split(".")[0] + "_site_counts.txt"
+    c.write_counts(outfile)
 
 """
-	FCount Object:
+	SCount Object:
 	Counts sequence contexts in a fasta sequence
 	Class variables:
         - chrom (str) name of chromosome for bed line we are currently reading
@@ -41,7 +41,7 @@ def main():
         - compliments (dict) maps complimentary bases to each other
 		- flank (int) number of flanking bases of sequence context to consider
 """
-class FCount(object):
+class SCount(object):
     def __init__(self, flank):
         self.flank = flank
         self.counts = self.init_counts()
@@ -51,22 +51,16 @@ class FCount(object):
 
     # calculate parameters for sequence
     def count(self, bedfile):
-        print "Calculating poisson binomial parameters for regions in %s.\n" % bedfile
-        i = 0
+    	k = self.flank*2+1
+        print "Counting up %d-mer contexts from regions in %s.\n" % (k, bedfile)
         with open(bedfile, 'r') as b:
             for line in b:
                 row = line.split('\t')
                 if not line.startswith("chr"): # skip comment line
                     continue
                 elif row[0][3:] != self.chrom:
-                    if i != 0:
-                        print "Read %d lines" % i
                     self.switchChrom(row[0][3:])
-                    i = 0
                 self.parseBedLine(row)
-                i += 1
-        print "Read %d lines\n" % i
-        print "The expected number of polymorphisms on this sequence is %f.\n" % self.mean
 
     # load new chrom file
     def switchChrom(self, chrom):
@@ -97,19 +91,15 @@ class FCount(object):
             seq = self.get_context(i)
 
             # skip if N in ref genome
-            if "N" in seq:
+            if not self.only_main_4_bases(seq):
                 n += 1
                 continue
 
             # append substitution prob to parameter list
-            elif seq in self.prob:
-                p = self.prob[seq]
-                self.params.append(p)
-                self.mean += p
+            elif seq[self.flank] in 'CA':
+            	self.counts[seq] += 1
             else:
-                p = self.prob[self.reverse_comp(seq)]
-                self.params.append(p)
-                self.mean += p
+                self.counts[self.reverse_comp(seq)] += 1
         if n != 0:
             print "Omitted %d contexts with N in reference genome" % n
 
@@ -131,7 +121,7 @@ class FCount(object):
         nucs = list('GATC')
         k = 1 + self.flank*2
         for nuc in central_nucs:
-            for flanks in itertools.product(nucs,repeat = k-1):
+            for flanks in product(nucs,repeat = k-1):
                 context = ''.join(flanks[:k/2]) + nuc + ''.join(flanks[k/2:])
                 counts[context] = 0
         return  counts
@@ -142,6 +132,17 @@ class FCount(object):
 
     def matches_kmer_length(self, context):
         return (len(context)==self.flank*2+1)
+
+    #sort counts dictionary alphabetically and write it to a file
+    def write_counts(self, outfile):
+        counts = [value for (key,value) in sorted(self.counts.items())]
+        contexts = sorted(self.counts)
+        with open(outfile, "w+") as f:
+            f.write("Context\tCount\n")
+            for i in range(len(contexts)):
+                f.write(contexts[i] + "\t" + str(counts[i]) + "\n")
+
+
 
 if __name__ == "__main__":
     main()

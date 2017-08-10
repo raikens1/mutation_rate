@@ -83,7 +83,7 @@ class Counter(object):
 	def write_counts(self, outfile):
 		counts = [value for (key,value) in sorted(self.counts.items())]
 		contexts = sorted(self.counts)
-		with open(outfile, "w+") as f:# is this syntax right?
+		with open(outfile, "w+") as f:
 			f.write("Context\tCount\tOne_mer\n")
 			for i in range(len(contexts)):
 				f.write(contexts[i] + "\t" + str(counts[i]) + "\t" + self.one_mer(contexts[i]) + "\n")
