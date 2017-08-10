@@ -9,6 +9,7 @@ sandbox*
 *chrom_counts*
 vcf_filtration/filtered_1kg_v3
 *.params
+*.ipynb
 
 # Compiled source #
 ###################
