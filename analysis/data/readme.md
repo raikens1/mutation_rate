@@ -6,7 +6,7 @@ Here, I've kept all of the main data files that I use for my analyses in R.
 
 I need to recalculate all of the following data:
 - [X] count dataframes for 3mer, 5mer, and 7mer, all populations
-- [ ] count dataframes with no X for 3mer, 5mer, and 7mer, all populations
+- [X] count dataframes with no X for 3mer, 5mer, and 7mer, all populations
 - [ ] rate matricies for 3mer, 5mer, and 7mer (this task may suck)
 
 Then I have to rerun all my workflows.  Solid.
