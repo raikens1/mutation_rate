@@ -3,8 +3,8 @@ title: "Heatmaps"
 author: "Rachael 'Rocky' Aikens, Voight Lab"
 date: "June 19, 2017"
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
 ---
 
 A previously, when we have considered a kmer sequence context model, we have considered each of the $\frac{3 (4^{k})}{2}$ possible sequence contexts separately.  In reality, however, it is likely that the mechinisms of mutation act similarly over certain types of contexts - for example, by recognizing certain shared motifs - so that those polymorphism types appear to have similar proportions in the data. Likewise, polymorphisms that have similar profiles across the globe are likely to be affected by the same mechanisms.  For this reason, it is valuable to try and identify mutational `signals' - groups of mutations which follow the same global patterns and are thus likely to be driven my the same mechanism.
@@ -221,6 +221,10 @@ This plot also does not separate into clear blocks of signals.  It would appear 
 \includegraphics[width=4in]{CGATA_T.pdf} 
 \end{center}
 
+(These plots are technically out of date since I recalculated gw_counts and rates on 8/16, but the gist of the patterns should not change)
+
+It also appears that there are some polymorphism types which separate out first that are heterogeneous in Europe - most notably elevated in Fins.  It might be worth some time to chase this down and see if it amounts to anything.
+
 ***********************************************************
 
 \pagebreak
@@ -273,7 +277,7 @@ With subcontext.heatmap, we can visualize all 7mers which have 5mer contexts tha
 
 ```{r 7mers from heterogeneous 5mers, echo = F}
 # 5mers in the first separated group which appears JPT elevated
-c5 <- cutree(dr.5.JPT3mers, k = 5)
+c5 <- cutree(dr.5.JPT3mers, k = 4)
 JPT5mers <- subset(names(c5), c5 == 1)
 
 # plot 7mers which have one of these 5mers as the subcontext
@@ -288,7 +292,7 @@ Now that we have a few possible clusterings of 5mers and 7mers which we believe 
 
 ```{r get JPT7mers, echo = F}
 #get JPT7mers from clustering of JPT3mers
-c7.1 <- cutree(dr.7.JPT3mers, k = 4)
+c7.1 <- cutree(dr.7.JPT3mers, k = 2)
 JPT7mers.1 <- subset(names(c7.1), c7.1 == 2)
 
 #get JPT7mers from clustering of JPT5mers
@@ -551,13 +555,13 @@ chi.bycluster(data = counts.JPT.3mer, gw = gw.3mer,dr = dr.3mer.EASonly, k = 2, 
 chi.bysubset(data = counts.JPT.3mer, gw = gw.3mer, muts = JPT3mers) # p = 0.2, JPT enriched group
 
 #5mer groups
-chi.bycluster(data = counts.JPT.5mer, gw = gw.5mer,dr = dr.5.JPT3mers, k = 5, n = 1, exclude = c()) # p = 0.076
+chi.bycluster(data = counts.JPT.5mer, gw = gw.5mer,dr = dr.5.JPT3mers, k = 4, n = 1, exclude = c()) # p = 0.075
 
 #7mer groups
-chi.bycluster(data = counts.JPT.7mer, gw = gw.7mer,dr = dr.7.JPT3mers, k = 4, n = 2) # p = 0.15
-chi.bycluster(data = counts.JPT.7mer, gw = gw.7mer,dr = dr.7.JPT3mers, k = 4, n = 2, # p = 0.65
+chi.bycluster(data = counts.JPT.7mer, gw = gw.7mer,dr = dr.7.JPT3mers, k = 2, n = 2) # p = 0.009
+chi.bycluster(data = counts.JPT.7mer, gw = gw.7mer,dr = dr.7.JPT3mers, k = 2, n = 2, # p = 0.83
               exclude = c("CAAACCC->C", "CCCACAG->C", "TTTATTT->T"))
-chi.bycluster(data = counts.JPT.7mer, gw = gw.7mer,dr = dr.7.JPT5mers, k = 7, n = 1) # p = 0.003
+chi.bycluster(data = counts.JPT.7mer, gw = gw.7mer,dr = dr.7.JPT5mers, k = 7, n = 1) # p = 0.002
 chi.bycluster(data = counts.JPT.7mer, gw = gw.7mer,dr = dr.7.JPT5mers, k = 7, n = 1, # p = 0.36
               exclude = c("CAAACCC->C", "CCCACAG->C", "TTTATTT->T"))
 chi.bysubset(counts.JPT.7mer, gw.7mer, JPT7mers.3) # p = 0.000044
@@ -569,7 +573,7 @@ chi.bysubset(counts.JPT.7mer, gw.7mer, muts.7.filtered) # p = 0.49
 
 Since we have all these pieces set up, I wanted to run the following test on X:
 
-```{r X enrichment across all contexts}
+```{r X enrichment across all contexts, eval = F}
 # 3mers 
 x.3mers <- binomtest.byrow(counts.JPT.3mer, gw.3mer)
 kable(subset(x.3mers, x.3mers$p < 0.05/length(x.3mers$Context)))
@@ -602,4 +606,4 @@ There are a few broad weaknesses to this analysis
 
 2. Plotting more than a couple hundred polymorphism types tends to get messy, fast.  This makes it harder to make sense of patterns at higher sequence context levels (although, for the moment, it's the best we've got).
 
-3. The default distance function for creating these clusterings is Euclidean.  For our purposes, it might make more sense to use Mahattan distance.
+3. The default distance function for creating these clusterings is Euclidean, while most people use Pearson correllation coefficient.  We found that pearson tended to give us results which matched more poorly with our intuition from the literature (e.g. subpopulations did not group by continent).

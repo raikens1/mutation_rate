@@ -2,6 +2,7 @@
 # makes a better formatted table of info from a chrom_counts file
 # gw_counts should have the counts of # of genomewide appearances for the context of interest
 # subcontext_ref should be a dataframe from an nmer_mutations_ref file
+# NOTE: even if X is not to be included, the gw_counts df passed in may include X.  (Should work either way... ?)
 
 process_chrom_counts <- function(chrom_counts, gw_counts, subcontext_ref, X = T){
   with_totals <- addtotals(chrom_counts, X)

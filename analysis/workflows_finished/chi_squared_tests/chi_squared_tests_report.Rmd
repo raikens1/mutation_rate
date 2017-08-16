@@ -215,11 +215,11 @@ hom.test.plot <- function(p.values, lab.lim, NoTCC = F){
   my.plot <- qplot(data$Context, -log10(data$p)) +
     labs(x = "Polymorphism type", y = expression(-log[10](italic(p))))+
     scale_color_manual("", values = h.colors)+
-    geom_point(aes(color=factor(data$X1mer)), size = 1.75)+
+    geom_point(aes(color=factor(data$X1mer)), size = 2.5)+
     geom_hline(yintercept = -log10(alpha), color = "black", linetype = 2, size = 1)+
     geom_text(data = sigs, aes(sigs$Context, -log10(sigs$p), 
                                label = sigs$Context, color = sigs$X1mer), 
-              hjust = 0, nudge_x = 1.5, nudge_y = 3, size = 3, check_overlap = TRUE)+
+              hjust = 0, nudge_x = 1.5, nudge_y = 2, size = 4, check_overlap = TRUE)+
     geom_text(aes(15, -log10(alpha)-2, label = paste("significant, p < ", signif(alpha, 1)), vjust = 1),
               color = "black", size = 4)+
     theme(axis.ticks.x = element_blank(),
