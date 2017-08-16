@@ -13,7 +13,7 @@ Recall the following list of top variable 5mers, with known 3mer signals (GGA->A
 
 ```{r print sig.5mers, echo = F}
 kable(head(sig.5mers, n = 10), row.names = F, digits = 600,
-      caption = "14 most highly significant 5mers")
+      caption = "10 most highly significant 5mers")
 ```
 
 
@@ -33,9 +33,9 @@ grid.arrange(a,b, ncol = 2)
 c
 ```
 ```{r}
-a <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "AGC->A")
-b <- CI.plot(AFR_5mer_counts, EUR_5mer_counts, EAS_5mer_counts, SAS_5mer_counts, "AAGCC->A")
-c <- subrate.lplot(AFR_5mer_counts, EUR_5mer_counts, EAS_5mer_counts, SAS_5mer_counts, "AGC->A")
+a <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "GCT->T")
+b <- CI.plot(AFR_5mer_counts, EUR_5mer_counts, EAS_5mer_counts, SAS_5mer_counts, "GGCTT->T")
+c <- subrate.lplot(AFR_5mer_counts, EUR_5mer_counts, EAS_5mer_counts, SAS_5mer_counts, "GCT->T")
 grid.arrange(a,b, ncol = 2)
 c
 ```
