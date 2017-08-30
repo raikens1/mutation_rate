@@ -1,6 +1,6 @@
 # multiallelic
 
-The vcfs in this directory contain population private variants for each nonadmixed subpopulation in Africa.  They were filtered from the vcfs in PRIV_ANCESTRAL/mutliallelic around 7/29/2016.
+The vcfs in this directory contain population private variants for each nonadmixed subpopulation in Africa.  They were filtered from the vcfs in PRIV_ANCESTRAL/2_mutliallelic around 7/29/2016.
 
 These files have been filtered based on the following criteria:
  - minor allele count 2 or higher
@@ -13,7 +13,7 @@ They are marked as 'multiallelic' because they still contain multiallelic varian
 
 ## File generation
 
-These files were generated using the vcf tools (v0.1.12) on the files in PRIV_ANCESTRAL/filtered_vcfs, extracting private polymorphisms present in each subpopulation.  The commands are saved in multiallelic_AFR.sh.
+These files were generated using the vcf tools (v0.1.12) on the files in PRIV_ANCESTRAL/filtered_vcfs, extracting private polymorphisms present in each subpopulation.  The script AFR_SUBPOP_multiallelic.sh will submit a job to the cluster to generate this file for a given population and chromosome.
 
 ## Notes:
 

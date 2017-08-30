@@ -13,7 +13,7 @@ They are marked as 'multiallelic' because they still contain multiallelic varian
 
 ## File generation
 
-These files were generated using the vcf tools (v0.1.12) on the files in PRIV_ANCESTRAL/filtered_vcfs, extracting private polymorphisms present in each subpopulation.  The commands are saved in multiallelic_EAS.sh (or possibly filter_EAS.sh??).
+These files were generated using the vcf tools (v0.1.12) on the files in PRIV_ANCESTRAL/1_filtered_vcfs, extracting private polymorphisms present in each subpopulation.  The script EAS_SUBPOP_multiallelic.sh submits a job to the Voightlab cluster for a given population and chromosome. The original scripts used to do this step are deprecated.  They are saved in ./archive.
 
 ## Notes:
 

@@ -14,6 +14,12 @@ These files have been filtered based on the following criteria:
 
 These files were generated using the awk and cut on the files in ../private_multiallelic to remove individual sample columns, comments, and multiallelic variants.
 
+In later iterations of this analysis, I decided to keep the sample colummns and comments so that the vcf file format would be maintained.  To do this, one could use an awk command like this:
+
+bgzip -cd multiallelic.vcf.gz | awk '{if (length($5) == 1 || $1 ~ /^#/) print }' | bgzip -c > private.vcf.gz
+
+As a result, some of the files in this directory are in vcf format and some are not.
+
 ## Notes:
 
 *purpose* these are used as the final SNP sets for counting

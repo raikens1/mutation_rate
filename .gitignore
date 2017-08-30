@@ -6,7 +6,6 @@ helper_code/playground
 *temp*
 sandbox*
 *folded_counts.txt
-*chrom_counts
 *.params
 *.ipynb
 *chrom_counts.txt

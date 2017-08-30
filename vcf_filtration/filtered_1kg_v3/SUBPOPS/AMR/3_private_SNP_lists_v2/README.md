@@ -1,13 +1,21 @@
-private_SNP_lists_v2
-#########################
+# private SNP lists
 
-This directory will contain all American variants from monoallelic_variants which are 'private' to AMR based on the following definition:
+The files in this directory contain population private variants for each admixed American population.  They were filtered from the vcfs in ../2_biallelic_variants around 5/12/2017.  Most are not in vcf format (the sample columns have been cut out).
 
-A variant is 'private' to AMR if it is not one of the cosmopolitan variants (COSMO).
-Cosmopolitan variants are those which are found in two or more of: AFR, EUR, EAS, or SAS
+These files have been filtered based on the following criteria:
+ - minor allele count 2 or higher
+ - only individuals from the appropriate continental group (based on identity files in :/vcf_filtration/populations)
+ - within regions specified by nc_regions (in :/vcf_filtration/nc_regions/archive; not on github)
+ - indels removed
+ - population 'private.' Any variant 'private' to an admixed american subpopulation if it is observed in that subpopulation and not counted as cosmopolitan.
+ - no multiallelic variants
 
-The .gz files in this directory were made by running filter_private_v2.sh in this working directory.
-The SNPs from these files were counted using shell scripts count_all_3mers.sh, count_all_5mers.sh, count_all_7mers.sh. 
-The outputs from these counting exploits can be found in their respective subdirectories.
+## File generation
 
+These files were generated using the vcf-isec tool on the files in ../2_biallelic_variants to remove cosmopolitan variants so that these sets are AMR 'private.'  The script filter_private.sh will submit a job to the voightlab cluster to generate these files for a given population and chromosome. (The original script used to do this work is now deprecated. It is saved in ./archive/)
 
+## Notes:
+
+*purpose* these are used as the final SNP sets for counting.
+
+*future versions* in the future, I'd like to maintain the vcf formatting of these files instead of removing comments and sample columns.

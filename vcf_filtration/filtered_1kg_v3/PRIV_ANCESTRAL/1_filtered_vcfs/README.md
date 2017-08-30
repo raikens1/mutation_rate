@@ -12,12 +12,34 @@ In addition, ancestral allele (AA) and Allele frequency in the relevant populati
 
 ## File generation
 
-Below is an example of the command to perform these filtration steps for chromosome 22 in Europeans:
+These files were generated with vcftools using the --recode option, with the output piped to stdout using the --stdout option so that they could be compressed with bgzip.  For example, to filter European variants from the chromosome 22 vcf, one would run:
 
-bsub -q voight_normal -o ~/EUR_22_AA.out -i ~/EUR_22_AA.err "vcftools --gzvcf ALL.chr22.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz --keep /project/voight_MR/raikens/SNP_AFs/EUR_pops --mac 2 --bed /project/voight_MR/raikens/SNP_AFs/nc_regions  --remove-indels --recode-INFO AA  --recode-INFO EUR_AF --out /project/voight_MR/raikens/SNP_AFs/chr22_EUR"
+vcftools --gzvcf /project/voight_datasets/1kg/phaseIII_2013/ALL.chr22.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz --keep ../../../populations/EUR_pops --bed ../../../nc_bedfiles/archive/nc_regions_header.bed  --mac 2 --remove-indels --remove-filtered-all --recode --recode-INFO AA --recode-INFO EUR_AF --stdout | bgzip -c > chr22_EUR_test.vcf.gz
+
+(Here, "/project/.../ALL.chr22.phase3_shapeit2..." is a path to the chr22 vcf from 1kg phase III)
+
+This runs vcftools with the following options:
+        --gzvcf /project/voight_datasets/1kg/phaseIII_2013/ALL.chr22.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz
+        --keep ../../../populations/EUR_pops
+        --mac 2
+        --recode
+        --remove-filtered-all
+        --remove-indels
+        --stdout
+        --recode-INFO AA
+        --recode-INFO EUR_AF
+        --bed ../../../nc_bedfiles/archive/nc_regions_header.bed
+
+The script filter_from_1kg.sh in this directory submits a job like this to the cluster for a given pop and chromosome.
+
+All vcfs should be tabix indexed (tabix -p vcf <myfile.vcf.gz>)
 
 ## Notes
 
 *Purpose:* These files will go on to be filtered for private variants and have multiallelic sites removed.
 
 *Future Versions:* In the future, I would like to refilter these files with updated versions of the inclusion region bed files, and filtering out multiallelic variants at this step, rather than downstream.  Also, I'd like to remove the recoding of allele frequency in AFR only to avoid confusion. Since 1kg uses a different definition of AFR than we do, this number is not useful to us and will most-likely cause confusion.
+
+## Bug history
+
+Seven files in this directory were truncated during their initial filtration step. The original versions of these files are saved in the "truncated" subdirectory.  The current versions of these files (saved in this directory) were remade on 8/17/2017.  
