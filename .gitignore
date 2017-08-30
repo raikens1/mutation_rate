@@ -8,7 +8,6 @@ sandbox*
 *folded_counts.txt
 *.params
 *.ipynb
-*chrom_counts.txt
 *.tbi
 
 # Compiled source #
