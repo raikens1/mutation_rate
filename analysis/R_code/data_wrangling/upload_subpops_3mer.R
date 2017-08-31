@@ -85,24 +85,3 @@ pops.all <- c("LWK", "ESN", "YRI", "MSL", "GWD",
               "PJL", "GIH", "ITU", "STU", "BEB",
               "CDX", "KHV", "CHS", "CHB", "JPT")
 
-# Code for making rate matricies
-# Really should be elsewhere
-#
-# subpops.names <- c("TSI", "IBS", "CEU", "GBR", "FIN", "STU", "ITU", "BEB", "GIH", "PJL",
-#                    "ESN", "GWD", "LWK", "MSL", "YRI", "CDX", "CHB", "CHS", "JPT", "KHV")
-# 
-# subpops.3mer <- list(TSI_EUR_3mer_counts, IBS_EUR_3mer_counts, CEU_EUR_3mer_counts, GBR_EUR_3mer_counts, FIN_EUR_3mer_counts, 
-#                      STU_SAS_3mer_counts, ITU_SAS_3mer_counts, BEB_SAS_3mer_counts, GIH_SAS_3mer_counts, PJL_SAS_3mer_counts,
-#                      ESN_AFR_3mer_counts, GWD_AFR_3mer_counts, LWK_AFR_3mer_counts, MSL_AFR_3mer_counts, YRI_AFR_3mer_counts,
-#                      CDX_EAS_3mer_counts, CHB_EAS_3mer_counts, CHS_EAS_3mer_counts, JPT_EAS_3mer_counts, KHV_EAS_3mer_counts)
-#
-# X3mer_subpop_rates <- matrix(0, nrow = 96, ncol = 20)
-#   
-#   for (i in 1:20){
-#     X3mer_subpop_rates[,i] <- subpops.3mer[[i]]$Rate
-#   }
-#
-# colnames(X3mer_subpop_rates) <- subpops.names
-# rownames(X3mer_subpop_rates) <- TSI_EUR_3mer_counts$Context
-#   
-# write.table(X3mer_subpop_rates, "rate_profiles/rates_3mer.txt", sep = "\t", row.names = TRUE, quote = FALSE, col.names = TRUE)

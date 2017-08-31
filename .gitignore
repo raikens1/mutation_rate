@@ -6,11 +6,9 @@ helper_code/playground
 *temp*
 sandbox*
 *folded_counts.txt
-*chrom_counts
-vcf_filtration/filtered_1kg_v3
 *.params
 *.ipynb
-*JPTCHSCHB_EAS_chrom_counts.txt
+*.tbi
 
 # Compiled source #
 ###################

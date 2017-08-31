@@ -3,8 +3,8 @@ title: "Heatmaps"
 author: "Rachael 'Rocky' Aikens, Voight Lab"
 date: "June 19, 2017"
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 ---
 
 A previously, when we have considered a kmer sequence context model, we have considered each of the $\frac{3 (4^{k})}{2}$ possible sequence contexts separately.  In reality, however, it is likely that the mechinisms of mutation act similarly over certain types of contexts - for example, by recognizing certain shared motifs - so that those polymorphism types appear to have similar proportions in the data. Likewise, polymorphisms that have similar profiles across the globe are likely to be affected by the same mechanisms.  For this reason, it is valuable to try and identify mutational `signals' - groups of mutations which follow the same global patterns and are thus likely to be driven my the same mechanism.
