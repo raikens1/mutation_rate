@@ -3,9 +3,9 @@ title: "Basic Plots and Data Gazing"
 author: "Rachael 'Rocky' Aikens, Voight Lab"
 date: "July 6, 2017"
 output:
-  html_document: default
   pdf_document:
     latex_engine: xelatex
+  html_document: default
 ---
 
 ```{r setup, echo = F, message = F, warning=F}
@@ -386,7 +386,7 @@ Here, I've chosen to show the top 14 results, which are all significant at p < 1
 
 ##Signal 1: European C->T Elevation
 
-Among the top polymorphisms, TCC->T, ACC->T, TCT->T, and CCC->T have already been noted as part of the signal of European C->T enrichment. In addition, #11 and #12, TCA->T and ACT->T share the same profile as the other Europe-enriched C->T mutations and cluster together with them in heatmap experiments. However, they have not been noted in previous studies.  These two mutations are shown below, along with TCC->T for reference:
+Among the top polymorphisms, TCC->T, ACC->T, TCT->T, and CCC->T have already been noted as part of the signal of European C->T enrichment. In addition, #8 and #9, TCA->T and ACT->T share the same profile as the other Europe-enriched C->T mutations and cluster together with them in heatmap experiments. However, they have not been noted in previous studies.  These two mutations are shown below, along with TCC->T for reference:
 
 ```{r CI signal1, echo = F, fig.width = 7, fig.height = 2.3}
 a <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "TCC->T")
@@ -412,30 +412,35 @@ CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts,"CCC-
 
 ## Signal 2: Enrichment of certain polymorphisms in Europe
 
-The fourth and fifth most significant results, however, GAT->T and ACC->A have not previously been noted, and are highly significant at p < 10^-85^. In addition, these mutation types are clustered with GAC->T, the 16^th^ most highly significantly heterogeneous polymorphism type.  The mutation rates for the three of these polymorphisms are shown below:
+The fourth and fifth most significant results, however, GAT->T and ACC->A have not previously been noted, and are highly significant at p < 10^-95^. In addition, the 13th and 14th most significant results, GCT->T and GAC->T show a similar profile of enrichment in south and East Asia.
 
-```{r CI signal2, echo = F, fig.width = 7, fig.height = 3}
+```{r CI signal2, echo = F, fig.width = 7, fig.height = 6}
 a <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "GAT->T")
 b <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "ACC->A")
-c <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "GAC->T")
-grid.arrange(a,b,c, ncol = 3)
+c <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "GCT->T")
+d <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "GAC->T")
+grid.arrange(a,b,c,d, ncol = 2)
 ```
 
 
-```{r, chrom signal2, echo = F, fig.width = 7, fig.height = 3}
-d <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts,
-               gw_3mer_counts,"GAT->T")
+```{r, chrom signal2, echo = F, fig.width = 7, fig.height = 6}
 e <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts,
-               gw_3mer_counts,"ACC->A")
+               gw_3mer_counts,"GAT->T")
 f <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts,
+               gw_3mer_counts,"ACC->A")
+g <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts,
+               gw_3mer_counts,"GCT->T")
+h <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts,
                gw_3mer_counts,"GAC->T")
-grid.arrange(d,e,f, ncol = 3)
+grid.arrange(e, f, g, h, ncol = 2)
 ```
+Interestingly, chromosomes 19 and 22 appear as outliers on the lower end, while the X chromosome appears as an outlier on the upper end.
+
 \pagebreak
 
 ## Signal 3: CpG transitions
 
-All four CpG transitions appear among the top 11 most significant results.  Ian Mathieson and David Riech have previously noted that there is some amount of variation in CpG enrichment between populations, but that this variation is slight relative to the overall rate of CpG transitions. Other studies have noted that CpGs are the most "clocklike" polymorphism types among humans and other primates.  The CpG mutations are shown below:
+Three of the four CpG transitions appear among the top results, while the forth ranks 18th (p < 1E-30).  Ian Mathieson and David Riech have previously noted that there is some amount of variation in CpG enrichment between populations, but that this variation is slight relative to the overall rate of CpG transitions. Other studies have noted that CpGs are the most "clocklike" polymorphism types among humans and other primates.  The CpG mutations are shown below:
 
 ```{r CI signal3, echo = F, fig.width = 5.5, fig.height = 6, fig.align="center"}
 a <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "TCG->T")
@@ -463,22 +468,12 @@ CI.plot.subpop(subpops.3mer.ancestral, "AAC->C", pops.ancestral)
 
 ## Additional Signals
 
-Two remaining polymorphism types have not yet been mentioned. The first highly significant signal which has not been is ACA->T, which appears elevated in Africa.
+One remaining polymorphism type has not yet been mentioned. The first highly significant signal which has not been is ACA->T, which appears elevated in Africa.
 
 ```{r ACAT, echo = F, fig.align="center", fig.height=3, fig.width=5.5}
 a <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "ACA->T")
 b <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts,
                gw_3mer_counts,"ACA->T")
-grid.arrange(a,b, ncol = 2)
-```
-
-The second is GCC->T,which is elevated in East Asia in addition to Europe and South Asia.
-
-
-```{r GCCT, echo = F, fig.align="center", fig.height=3, fig.width=5.5}
-a <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "GCC->T")
-b <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts,
-               gw_3mer_counts,"GCC->T")
 grid.arrange(a,b, ncol = 2)
 ```
 
