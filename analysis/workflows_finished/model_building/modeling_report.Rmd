@@ -3,8 +3,8 @@ title: "Model Building"
 author: "Rachael 'Rocky' Aikens, Voight Lab"
 date: "July 28, 2017"
 output:
-  pdf_document: default
   html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}

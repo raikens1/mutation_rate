@@ -3,9 +3,9 @@ title: "Basic Plots and Data Gazing"
 author: "Rachael 'Rocky' Aikens, Voight Lab"
 date: "July 6, 2017"
 output:
+  html_document: default
   pdf_document:
     latex_engine: xelatex
-  html_document: default
 ---
 
 ```{r setup, echo = F, message = F, warning=F}
