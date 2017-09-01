@@ -1,5 +1,8 @@
 # mutation_rate
 
+# Written by: Rocky Aikens
+# Last Updated: 09/01/2017
+
 This repo contains all of the code and essential raw data
 for replicating the central results of my report on differences
 in polymorphism patterns across populations
