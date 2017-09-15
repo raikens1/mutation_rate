@@ -146,7 +146,7 @@ table1 <- cbind(o.p.3mer$Context, rates/AFR_3mer_counts$Rate, o.p.3mer$p)
 
 table1 <- table1[order(o.p.3mer$p),]
 colnames(table1)<- c("Context", "AFR relative rate", "EUR relative rate", "SAS relative rate", "EAS relative rate", "p")
-table1 <- head(table1, 14)
+table1 <- head(table1, 15)
 
 # plot significant 7mers and print most signif. new results
 kable(table1, digits = 600, row.names = F,
