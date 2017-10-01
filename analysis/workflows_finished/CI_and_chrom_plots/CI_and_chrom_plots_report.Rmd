@@ -373,36 +373,39 @@ sig.7mers <- read_delim("o_significant_new_7mers.txt",
                         delim ="\t", escape_double = F, trim_ws = T)
 ```
 
-Recall the following list of the top 10 most highly significant 3mers:
+Recall the following list of the most highly significant 3mers:
 
 ```{r print sig.3mers, echo = F}
-kable(head(sig.3mers, n = 14), row.names = F, digits = 600,
-      caption = "14 most highly significant 3mers")
+kable(head(sig.3mers, n = 15), row.names = F, digits = 600,
+      caption = "15 most highly significant 3mers")
 ```
 
-Here, I've chosen to show the top 14 results, which are all significant at p < 10^-40^.
+Here, I've chosen to show the top 15 results, which are all significant at p < 10^-40^.
 
 \pagebreak
 
 ##Signal 1: European C->T Elevation
 
-Among the top polymorphisms, TCC->T, ACC->T, TCT->T, and CCC->T have already been noted as part of the signal of European C->T enrichment. In addition, #8 and #9, TCA->T and ACT->T share the same profile as the other Europe-enriched C->T mutations and cluster together with them in heatmap experiments. However, they have not been noted in previous studies.  These two mutations are shown below, along with TCC->T for reference:
+Among the top polymorphisms, TCC->T, ACC->T, TCT->T, and CCC->T have already been noted as part of the signal of European C->T enrichment. In addition, GCC->T, TCA->T and ACT->T share the same profile as the other Europe-enriched C->T mutations and cluster together with them in heatmap experiments. However, they have not been noted in previous studies.  These two mutations are shown below, along with TCC->T for reference:
 
 ```{r CI signal1, echo = F, fig.width = 7, fig.height = 2.3}
 a <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "TCC->T")
 b <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "TCA->T")
 c <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "ACT->T")
-grid.arrange(a,b,c, ncol = 3)
+d <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "GCC->T")
+grid.arrange(a,b,c,d, ncol = 4)
 ```
 
 ```{r, chrom signal1, echo = F, fig.width = 7, fig.height = 2.3}
-d <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts,
-               gw_3mer_counts,"TCC->T")
 e <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts,
-               gw_3mer_counts,"TCA->T")
+               gw_3mer_counts,"TCC->T")
 f <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts,
+               gw_3mer_counts,"TCA->T")
+g <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts,
                gw_3mer_counts,"ACT->T")
-grid.arrange(d,e,f, ncol = 3)
+h <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts,
+               gw_3mer_counts,"GCC->T")
+grid.arrange(e,f,g,h, ncol = 4)
 ```
 Note that although these patterns appear similar in EUR, EAS, and SAS, there are noteable differences between the relative rates in Africa. This seems to be common among the C->T signal polymorphisms. Consider for example CCC->T:
 
