@@ -598,6 +598,9 @@ o.sig.5mer <- o.sig.5mer[order(o.sig.5mer$p),]
 o.ns.5 <- length(o.sig.5mer$Context); o.ns.5
 
 # filter types from known 3mer signals
+new.signal <- c(new.signal, "TCA->T", "ACT->T", "GCC->T", "ACA->T", "GCT->T")
+# new.signal now contains all 3mers from table 1, excluding the 4 previsouly reported C->Ts in EUR.signal
+
 o.new.5mers <- subset(o.sig.5mer, !is.element(o.sig.5mer$X3mer, c(EUR.signal, new.signal)))
 
 # count number of hits left over
