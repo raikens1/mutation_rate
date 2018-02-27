@@ -76,18 +76,18 @@ fourway.chi <- function(AFR, EUR, EAS, SAS, filter = T){
 }
 
 ordered.p <- function(pdata){
-  #preprocess data to order and remove nas 
+  # preprocess data to order and remove nas 
   pdata <- pdata[complete.cases(pdata$p),]
   myorder <- order(pdata$p)
   n.muts <- length(pdata$p)
   
   p.ordered <- rep(0, n.muts)
   
-  #set largest p-value 
+  # set largest p-value 
   j <- myorder[n.muts]
   p.ordered[j] <- pdata$p[j]
   
-  #initialize not mutated counts based on this lowest p-value mutation
+  # initialize not mutated counts based on this lowest p-value mutation
   not.mut <- c(pdata$AFR.Count[j], pdata$EUR.Count[j], 
                pdata$EAS.Count[j], pdata$SAS.Count[j])
   
@@ -98,7 +98,35 @@ ordered.p <- function(pdata){
     data <- cbind(mut, not.mut)
     p.ordered[j] <- chisq.test(data)$p.value
     
-    #add these mutations to the not.mutated counts for future tests
+    # add these mutations to the not.mutated counts for future tests
+    not.mut <- not.mut + mut
+  }
+  pdata$p <- p.ordered
+  return(pdata)
+}
+
+pairwise.op <- function(pdata){
+  # preprocess data to order and remove nas 
+  pdata <- pdata[complete.cases(pdata$p),]
+  myorder <- order(pdata$p)
+  n.muts <- length(pdata$p)
+  
+  p.ordered <- rep(0, n.muts)
+  
+  # set largest p-value 
+  j <- myorder[n.muts]
+  p.ordered[j] <- pdata$p[j]
+  
+  # initialize not mutated counts based on this lowest p-value mutation
+  not.mut <- c(pdata$Counts1[j], pdata$Counts2[j])
+  
+  for (i in n.muts:1){
+    j <- myorder[i]
+    mut <-c(pdata$Counts1[j], pdata$Counts2[j])
+    data <- cbind(mut, not.mut)
+    p.ordered[j] <- chisq.test(data)$p.value
+    
+    # add these mutations to the not.mutated counts for future tests
     not.mut <- not.mut + mut
   }
   pdata$p <- p.ordered
@@ -111,8 +139,8 @@ ordered.p <- function(pdata){
 # calculates homogeneity test p values for pairwise comparisons of two dfs of counts
 pairwise.chi <- function(counts.1, counts.2, filter = T){
   n.contexts = length(counts.1$Context)
-  result <- data.frame(matrix(ncol=2,nrow=n.contexts))
-  colnames(result) <- c("Context", "p")
+  result <- data.frame(matrix(ncol=4,nrow=n.contexts))
+  colnames(result) <- c("Context", "Counts1", "Counts2", "p")
   
   result$Context <- counts.1$Context
   sum.1 <- sum(counts.1$Count)
@@ -122,6 +150,9 @@ pairwise.chi <- function(counts.1, counts.2, filter = T){
     c.a <- c(counts.1$Count[i], counts.2$Count[i])
     c.b <- c(sum.1, sum.2) - c.a
     data <- cbind(c.a, c.b)
+    
+    result$Counts1[i] <- c.a[1]
+    result$Counts2[i] <- c.a[2]
     warning <- is(tryCatch(chisq.test(data), warning = function(w) w), "warning")
     if (filter == T & warning){
       result$p[i] <- NA
@@ -134,7 +165,7 @@ pairwise.chi <- function(counts.1, counts.2, filter = T){
 ```
 
 
-```{r F4A make}
+```{r F4A make1}
 # calculate ordered p values
 p.3mer <- fourway.chi(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts)
 o.p.3mer <- ordered.p(p.3mer)
@@ -156,9 +187,25 @@ kable(table1, digits = 600, row.names = F,
 Certain table entries are bold if they are significantly enriched in Africa.  The code below calculates which threemers are significantly different (p<1e-5) between AFR and EUR in table 1.
 
 ```{r find pairwise}
-pAFRvEUR <- pairwise.chi(AFR_3mer_counts, EAS_3mer_counts)
-pAFRvEUR <- subset(pAFRvEUR, pAFRvEUR$p < 1e-5)
-kable(subset(pAFRvEUR, is.element(pAFRvEUR$Context, table1[,1])))
+pAFRvEUR <- pairwise.chi(AFR_3mer_counts, EUR_3mer_counts)
+opAFRvEUR <- pairwise.op(pAFRvEUR)
+opAFRvEUR <- subset(opAFRvEUR, opAFRvEUR$p < 1e-5)
+kable(subset(opAFRvEUR, is.element(opAFRvEUR$Context, table1[,1])))
+```
+Here are the remaining comparisons:
+
+```{r}
+# South Asia
+pAFRvSAS <- pairwise.chi(AFR_3mer_counts, SAS_3mer_counts)
+opAFRvSAS <- pairwise.op(pAFRvSAS)
+opAFRvSAS <- subset(opAFRvSAS, opAFRvSAS$p < 1e-5)
+kable(subset(opAFRvSAS, is.element(opAFRvSAS$Context, table1[,1])))
+
+# East Asia
+pAFRvEAS <- pairwise.chi(AFR_3mer_counts, EAS_3mer_counts)
+opAFRvEAS <- pairwise.op(pAFRvEAS)
+opAFRvEAS <- subset(opAFRvEAS, opAFRvEAS$p < 1e-5)
+kable(subset(opAFRvEAS, is.element(opAFRvEAS$Context, table1[,1])))
 ```
 
 
@@ -292,13 +339,13 @@ CI.plot.bygroup <- function(AFR, EUR, EAS, SAS, muts, groupname = "mutation grou
 
 ```{r F1BCD make, fig.height=2.5, fig.width=6.5}
 s1 <- c("TCT->T", "ACC->T", "TCA->T", "CCC->T", "ACT->T", "TCC->T", "GCC->T")
-a <- CI.plot.bygroup(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, s1, "signature 1")
+a <- CI.plot.bygroup(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, s1, "profile 1")
 
 s2 <- c("GAT->T", "ACC->A", "GAC->T")
-b <- CI.plot.bygroup(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, s2, "signature 2")
+b <- CI.plot.bygroup(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, s2, "profile 2")
 
 s4 <-c("ACG->T", "CCG->T", "GCG->T", "TCG->T")
-d <- CI.plot.bygroup(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, s4, "signature 4")
+d <- CI.plot.bygroup(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, s4, "profile 4")
 ```
 
 ## D: CI plots for signal 3
@@ -365,8 +412,8 @@ popnames1E <- c("Africa", "Europe", "South Asia", "CDX", "KHV", "CHS", "CHB", "J
 muts1E <- c("CAC->C", "TAT->T", "GAC->C", "AAC->C", "TAC->C")
 ```
 
-```{r F1E make, fig.height=2.5, fig.width = 7.75}
-c <- CI.plot.subpop.bygroup(subpops1E, muts1E, popnames1E, colors1E, "signature 3")
+```{r F1E make, fig.height=2.5, fig.width = 8.5}
+c <- CI.plot.subpop.bygroup(subpops1E, muts1E, popnames1E, colors1E, "profile 3")
 grid.arrange(a,b,c,d,ncol = 4)
 ```
 
@@ -403,7 +450,7 @@ subrate.scplot <- function(count1, count2, mut, pops = c("Pop 1", "Pop 2"), labe
 
   #make plot
   p_plot <- qplot(pop1.mut$Rate, pop2.mut$Rate) +
-    labs(x = bquote(.(ref)%->%.(alt) ~ .(paste("in", pops[1]))), y = bquote(.(ref)%->%.(alt) ~ .(paste("in", pops[2])))) +
+    labs(x = bquote(.(ref)%->%.(alt) ~ .(paste("mutation rate in", pops[1]))), y = bquote(.(ref)%->%.(alt) ~ .(paste("mutation rate in", pops[2])))) +
     theme(legend.title = element_blank(), 
           legend.justification= c(1,0), 
           legend.position=c(1,0),
@@ -445,7 +492,7 @@ subrate.scplot <- function(count1, count2, mut, pops = c("Pop 1", "Pop 2"), labe
 }
 ```
 
-```{r F2AB make, fig.height=3.25, fig.width=7}
+```{r F2AB make, fig.height=3.25, fig.width=7.5}
 a <- subrate.scplot(CDX_EAS_7mer_counts, JPT_EAS_7mer_counts, "ACG->T", pops = c("Chinese Dai in Xishuangbana", "Japanese in Tokyo"))
 b <- subrate.scplot(EAS_7mer_counts, EUR_7mer_counts, "TCC->T", pops = c("East Asia", "Europe"))
 grid.arrange(a, b, ncol = 2)
@@ -573,8 +620,8 @@ EASpopnames <- c("CDX", "KHV", "CHS", "CHB", "JPT")
 ```
 
 ```{r F3BC make, fig.height = 3.25, fig.width = 7}
-b <- subrate.scplot(CDX_EAS_7mer_counts, JPT_EAS_7mer_counts, "AAC->C", c("Chinese Dai in Xishuangbana", "Japanese in Tokyo"), JPT7mers)
-c <- CI.plot.subpop.bygroup(EASsubpops, JPT7mers, EASpopnames, rep("red", 5), "signature four 7-mers")
+b <- subrate.scplot(CDX_EAS_7mer_counts, JPT_EAS_7mer_counts, "AAC->C", c("Chinese Dai", "Japanese in Tokyo"), JPT7mers)
+c <- CI.plot.subpop.bygroup(EASsubpops, JPT7mers, EASpopnames, rep("red", 5), "profile four 7-mers")
 grid.arrange(b,c, ncol =2 )
 ```
 
@@ -604,17 +651,42 @@ EUR.signal <- c("TCC->T", "ACC->T", "TCT->T", "CCC->T")
 new.signal <- c("GAT->T", "ACC->A", "GAC->T", "ACG->T", "CCG->T", "GCG->T", "TCG->T")
 o.new.7mers <- subset(o.sig.7mer, !is.element(o.sig.7mer$X3mer, c(EUR.signal, new.signal)))
 
-rates <- cbind(AFR_3mer_counts$Rate, EUR_3mer_counts$Rate, SAS_3mer_counts$Rate, EAS_3mer_counts$Rate)
-table1 <- cbind(o.p.3mer$Context, rates/AFR_3mer_counts$Rate, o.p.3mer$p)
+rates <- data.frame(cbind(AFR_7mer_counts$Rate, EUR_7mer_counts$Rate, SAS_7mer_counts$Rate, EAS_7mer_counts$Rate)/AFR_7mer_counts$Rate)
+rates$Context <- AFR_7mer_counts$Context
+rates <- subset(rates, is.element(rates$Context, o.new.7mers$Context))
+table4A <- merge(rates, o.new.7mers, by = "Context")
 
-table1 <- table1[order(o.p.3mer$p),]
-colnames(table1)<- c("Context", "AFR relative rate", "EUR relative rate", "SAS relative rate", "EAS relative rate", "p")
-table1 <- head(table1, 14)
+table4A <- table4A[order(table4A$p),][,c(1:5, 13)]
+colnames(table4A)<- c("Context", "AFR relative rate", "EUR relative rate", "SAS relative rate", "EAS relative rate", "p")
+table4A <- head(table4A, 5)
 
 # plot significant 7mers and print most signif. new results
-kable(head(o.new.7mers[,-c(2,3,4)], 10), digits = 600, row.names = F,
-      caption = "10 most significant new 7mers using ordered p value correction")
+kable(table4A, digits = 600, row.names = F,
+      caption = "5 most significant new 7mers using ordered p value correction")
 ```
+
+The code below checks for significant pairwise differences with AFR using p-ordered correction.  This determines which reates are boldface in Figure4A:
+
+```{r}
+# Europe
+pAFRvEUR <- pairwise.chi(AFR_7mer_counts, EUR_7mer_counts)
+opAFRvEUR <- pairwise.op(pAFRvEUR)
+opAFRvEUR <- subset(opAFRvEUR, opAFRvEUR$p < 1e-7)
+kable(subset(opAFRvEUR, is.element(opAFRvEUR$Context, c("CAAACCC->C", "TTTATTT->T", "TTTAAAA->T", "ATTAAAA->T", "AAACAAA->A"))))
+
+# South Asia
+pAFRvSAS <- pairwise.chi(AFR_7mer_counts, SAS_7mer_counts)
+opAFRvSAS <- pairwise.op(pAFRvSAS)
+opAFRvSAS <- subset(opAFRvSAS, opAFRvSAS$p < 1e-7)
+kable(subset(opAFRvSAS, is.element(opAFRvSAS$Context, c("CAAACCC->C", "TTTATTT->T", "TTTAAAA->T", "ATTAAAA->T", "AAACAAA->A"))))
+
+# East Asia
+pAFRvEAS <- pairwise.chi(AFR_7mer_counts, EAS_7mer_counts)
+opAFRvEAS <- pairwise.op(pAFRvEAS)
+opAFRvEAS <- subset(opAFRvEAS, opAFRvEAS$p < 1e-7)
+kable(subset(opAFRvEAS, is.element(opAFRvEAS$Context, c("CAAACCC->C", "TTTATTT->T", "TTTAAAA->T", "ATTAAAA->T", "AAACAAA->A"))))
+```
+
 
 ##BC
 
@@ -665,9 +737,9 @@ plotcol <- reorder(colors, theta*norm)
 b <- ggplot(df, aes(reorder(popnames, c(1,2,3,4)), theta*norm)) +
   geom_point(size = 3, color = plotcol) +
   geom_errorbar(aes(ymax = U*norm, ymin = L*norm), color = plotcol, size =.75)+
-  labs(y =  bquote(paste("Estimated mutation rate of")~.("TTTAAAA")%->%.("T")~paste("and")~.("TTTAAAA")%->%.("T"))) + #y axis label
+  labs(y =  bquote(paste("Mutation rate of")~.("TTTAAAA")%->%.("T")~paste("and")~.("TTTAAAA")%->%.("T"))) + #y axis label
   theme(axis.text.x = element_text(size = rel(.9)), axis.title.x = element_blank(), #adjust text sizes
-        axis.title.y = element_text(size = rel(.9)), axis.text.y = element_text(size = rel(.9), angle = 0, hjust = 0.5), title = element_text(size = rel(.7)),
+        axis.title.y = element_text(size = rel(.9)), axis.text.y = element_text(size = rel(1), angle = 0, hjust = 0.5), title = element_text(size = rel(.7)),
         legend.position = 'none')
 ```
 
