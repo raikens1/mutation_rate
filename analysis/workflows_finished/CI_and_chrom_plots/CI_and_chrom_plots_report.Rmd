@@ -591,11 +591,7 @@ X.preprocessing <- function(counts, gw, muts = c()){
 }
 ```
 
-Testing for enrichment on the X chromosome, we find that 4 of 9 of these polymorphisms is significantly enriched on X (see below).  The probability of observing this number of significant results by chance alone is:
-
-```{r}
-binom.test(4,9,0.05)$p.value
-```
+Testing for enrichment on the X chromosome, we find that some of these polymorphisms are significantly enriched on X (see below).  However, many of these hypothesis tests are questionable due to the low observed number of private substitutions on the X chromosome.  These questionable tests are excluded in the final mauscript figure detailing this result.
 
 ```{r, setup for X test, echo = F}
 JPT7mers <- subset(p.CDXJPT$Context, p.CDXJPT$fdr < 0.05)

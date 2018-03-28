@@ -1,0 +1,99 @@
+---
+title: "Site Frequency Spectra"
+author: "Rachael 'Rocky' Aikens, Voight Lab"
+date: "July 6, 2017"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, echo = F}
+library(readr)
+library(ggplot2)
+knitr::opts_knit$set(root.dir = '../../data')
+```
+
+```{r load data, echo = F, message = F}
+# Africa
+
+AFR_AF_bins <- read_delim("by_AF/v1_m_4000/AFR_sortedSNPs_bins.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+AFR_AF_counts <- read_delim("by_AF/v1_m_4000/AFR_AF_3mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+
+# Europe
+
+EUR_AF_bins <- read_delim("by_AF/v1_m_4000/EUR_sortedSNPs_bins.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+EUR_AF_counts <- read_delim("by_AF/v1_m_4000/EUR_AF_3mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+
+# East Asia
+
+EAS_AF_bins <- read_delim("by_AF/v1_m_4000/EAS_sortedSNPs_bins.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+EAS_AF_counts <- read_delim("by_AF/v1_m_4000/EAS_AF_3mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+
+# South Asia
+
+SAS_AF_bins <- read_delim("by_AF/v1_m_4000/SAS_sortedSNPs_bins.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+SAS_AF_counts <- read_delim("by_AF/v1_m_4000/SAS_AF_3mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+```
+
+```{r def SFSplot, echo = F}
+SFS.plot <- function(AFR, AFR.bins, EUR, EUR.bins, EAS, EAS.bins, SAS, SAS.bins, mut, before, leg = T, xlabel = T){
+  i <- which(AFR$Context == mut)
+  n <- nchar(mut)
+  ref <- substr(mut, 1, n-3)
+  alt <- substr(mut, n, n)
+  
+  #based on sequence context, figure out which text columns to remove
+  remove <- c(seq(before+1))
+  
+  #calculate mutation proportion across AF bin for each pop
+  AFR_prop <- AFR[i, -remove]/colSums(AFR[,-remove])
+  EUR_prop <- EUR[i, -remove]/colSums(EUR[,-remove])
+  EAS_prop <- EAS[i, -remove]/colSums(EAS[,-remove])
+  SAS_prop <- SAS[i, -remove]/colSums(SAS[,-remove])
+  
+  props <- as.numeric(c(AFR_prop, EUR_prop, EAS_prop, SAS_prop))
+  bins <- c(AFR.bins$AVG_AF, EUR.bins$AVG_AF, EAS.bins$AVG_AF, SAS.bins$AVG_AF)
+  
+  labels <- c(rep("Africa", length(AFR_prop)), rep("Europe", length(EUR_prop)), 
+              rep("East Asia", length(EAS_prop)), rep("South Asia", length(SAS_prop)))
+  dat <- data.frame(cbind(props, bins, labels))
+  names(dat)<- c("proportions", "AF", "POP")
+  
+  YU = max(props)
+  YL = min(props)
+  XU = max(log10(bins))
+  XL = min(log10(bins))
+  
+  #ggplot method
+  SFSplot <- ggplot(dat, aes(x = bins, y = props, group = labels, color = labels),
+                    xlim = c(XL, XU), ylim = c(YL, YU)) +
+              geom_line(size = 1)+
+              scale_y_continuous(name = bquote(.(ref)%->%.(alt) ~ .("proportion"))) +
+              scale_x_log10(name = "Alternate allele frequency") +
+              scale_color_manual("", values = c("forestgreen", "red", "darkblue", "magenta"))
+  
+  if (!leg){
+    SFSplot <- SFSplot + theme(legend.position = "none")
+  }
+  else {
+    SFSplot <- SFSplot + theme(legend.position = c(0.85, 0.8), 
+                               legend.title = element_blank(), 
+                               legend.key.size = unit(0.5, "cm"),
+                               legend.margin = unit(0.7, "cm"))
+  }
+  
+  if (!xlabel){
+    SFSplot <- SFSplot + theme(axis.text.x = element_blank(),
+                               axis.title.x = element_blank(),
+                               axis.ticks.x = element_blank())
+  }
+
+  return(SFSplot)
+}
+```
+
+```{r example, echo = F}
+SFS.plot(AFR_AF_counts, AFR_AF_bins, EUR_AF_counts, EUR_AF_bins, 
+         EAS_AF_counts, EAS_AF_bins, SAS_AF_counts, SAS_AF_bins, "TCC->T", 1)
+```
+

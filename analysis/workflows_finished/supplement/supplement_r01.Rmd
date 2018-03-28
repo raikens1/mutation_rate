@@ -1,0 +1,227 @@
+---
+title: "Supplementary Notes"
+author: "Rachael C. Aikens, Benjamin F. Voight"
+date: "March 27, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+knitr::opts_knit$set(root.dir = '../../data')
+
+library(ggplot2);library(gplots)
+library(stats);library(readr)
+library(dplyr);library(knitr)
+require(reshape2)
+library(gridExtra);library(grid)
+require(ggrepel)
+```
+
+# Supplementary Figures
+
+```{r S1 upload data}
+AFR_3mer_counts <- read_delim("3mer/AFR_3mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+EUR_3mer_counts <- read_delim("3mer/EUR_3mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+EAS_3mer_counts <- read_delim("3mer/EAS_3mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+SAS_3mer_counts <- read_delim("3mer/SAS_3mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+```
+
+```{r S1 functions}
+# calculates homogeneity test p values for pairwise comparisons of two dfs of counts
+pairwise.chi <- function(counts.1, counts.2, filter = T){
+  n.contexts = length(counts.1$Context)
+  result <- data.frame(matrix(ncol=4,nrow=n.contexts))
+  colnames(result) <- c("Context", "Counts1", "Counts2", "p")
+  
+  result$Context <- counts.1$Context
+  sum.1 <- sum(counts.1$Count)
+  sum.2 <- sum(counts.2$Count)
+
+  for (i in 1:n.contexts){
+    c.a <- c(counts.1$Count[i], counts.2$Count[i])
+    c.b <- c(sum.1, sum.2) - c.a
+    data <- cbind(c.a, c.b)
+    
+    result$Counts1[i] <- c.a[1]
+    result$Counts2[i] <- c.a[2]
+    warning <- is(tryCatch(chisq.test(data), warning = function(w) w), "warning")
+    if (filter == T & warning){
+      result$p[i] <- NA
+    }
+    else result$p[i] <- chisq.test(data)$p.value
+  }
+  
+  return(result)
+}
+
+#color vector so that plot colorings match Harris
+h.colors <- c("dark blue", "magenta", "purple", "forest green", "#0099FF", "red")
+
+#volcano plot function as in Harris 2015
+volcano.plot <- function(counts.1, counts.2, 
+                         p.vals, lab.lim, 
+                         pops = c("Population 1", "Population 2"), 
+                         legpos = c(0.2, 0.75)){
+  
+  f.1 <- counts.1$Count/sum(counts.1$Count)
+  f.2 <- counts.2$Count/sum(counts.2$Count)
+  f.diff <- (f.1 -f.2)/f.2
+  alpha <- 0.05/(6*length(counts.1$Count))
+  
+  sigs <- subset(counts.1, p.vals$p < lab.lim)
+  f.diff.sigs <- subset(f.diff, p.vals$p < lab.lim)
+  p.sigs <- subset(p.vals, p.vals$p < lab.lim)
+  
+  v_plot <- qplot(f.diff, -log10(p.vals$p)) +
+    labs(x = paste("Fold excess in", pops[1]) , 
+         y = expression(-log[10](italic(p))), 
+         title = paste(pops[1], "v", pops[2])) +
+    scale_color_manual("", values = h.colors)+ # set colors
+    geom_text(data = sigs, aes(f.diff.sigs, -log10(p.sigs$p), label = sigs$Context, color = sigs$X1mer), 
+              vjust = 1, nudge_y =-1, hjust = 1, nudge_x = -.03, size = 3, check_overlap = TRUE)+ # label highly significant
+    geom_point(aes(color=factor(counts.1$X1mer)), size = 3)+ # Color pts by one_mer
+    geom_hline(yintercept = -log10(alpha), color = "black", linetype = 2)+# significance line
+    theme(axis.text.x = element_text(size = rel(1.3)), axis.title.x = element_text(size = rel(1.1)), # adjust text sizes
+          axis.title.y = element_text(size = rel(1.1)), axis.text.y = element_text(size = rel(1.35)), 
+          legend.text = element_text(size = rel(1.1)), legend.position = legpos,
+          title = element_text(size = rel(1.2))) + # legend position and size 
+    xlim(c(-.4, .6)) + ylim(c(0, 400))
+  
+  return(v_plot)
+}
+```
+
+```{r S1 make figure}
+pEURvAFR <- pairwise.chi(EUR_3mer_counts, AFR_3mer_counts, filter = F)
+a <- volcano.plot(EUR_3mer_counts, AFR_3mer_counts, pEURvAFR, 1e-25, c("Europe", "Africa"), legpos = "none")
+pEASvAFR <- pairwise.chi(EAS_3mer_counts, AFR_3mer_counts, filter = F)
+b <- volcano.plot(EAS_3mer_counts, AFR_3mer_counts, pEASvAFR, 1e-25, c("East Asia", "Africa"))
+grid.arrange(a,b, ncol= 2)
+```
+
+**Supplementary Figure 1:** *Replication of Figure 1 from Kelley Harris, 2015*. Using our variant filtration pipleline for extracting population-private variants from the Phase III 1,000 Genomes Dataset, we recapitulate Harris's previous findings from analysis of the Phase I Release.  In keeping with Harris, 2015, the proportions of private 3mer substitutions were compared between pairs of populations using a pairwise chi-squared test.  Ordered p-value correction was not applied.  Unlike Harris, we choose to consider reverse-complimentary substitution classes as identical (e.g. TCC$\rightarrow$TTC and GGA$\rightarrow$ GAA are considered equivalent).
+
+***********************************************************************************************************
+
+\pagebreak
+
+```{r S2 upload data}
+# Africa
+AFR_AF_bins <- read_delim("by_AF/v1_m_4000/AFR_sortedSNPs_bins.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+AFR_AF_counts <- read_delim("by_AF/v1_m_4000/AFR_AF_3mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+
+# Europe
+EUR_AF_bins <- read_delim("by_AF/v1_m_4000/EUR_sortedSNPs_bins.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+EUR_AF_counts <- read_delim("by_AF/v1_m_4000/EUR_AF_3mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+
+# East Asia
+EAS_AF_bins <- read_delim("by_AF/v1_m_4000/EAS_sortedSNPs_bins.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+EAS_AF_counts <- read_delim("by_AF/v1_m_4000/EAS_AF_3mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+
+# South Asia
+SAS_AF_bins <- read_delim("by_AF/v1_m_4000/SAS_sortedSNPs_bins.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+SAS_AF_counts <- read_delim("by_AF/v1_m_4000/SAS_AF_3mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+```
+
+```{r S2 functions}
+SFS.plot <- function(AFR, AFR.bins, EUR, EUR.bins, EAS, EAS.bins, SAS, SAS.bins, mut, before, leg = T, xlabel = T){
+  i <- which(AFR$Context == mut)
+  n <- nchar(mut)
+  ref <- substr(mut, 1, n-3)
+  alt <- substr(mut, n, n)
+  
+  #based on sequence context, figure out which text columns to remove
+  remove <- c(seq(before+1))
+  
+  #calculate mutation proportion across AF bin for each pop
+  AFR_prop <- AFR[i, -remove]/colSums(AFR[,-remove])
+  EUR_prop <- EUR[i, -remove]/colSums(EUR[,-remove])
+  EAS_prop <- EAS[i, -remove]/colSums(EAS[,-remove])
+  SAS_prop <- SAS[i, -remove]/colSums(SAS[,-remove])
+  
+  props <- as.numeric(c(AFR_prop, EUR_prop, EAS_prop, SAS_prop))
+  bins <- c(AFR.bins$AVG_AF, EUR.bins$AVG_AF, EAS.bins$AVG_AF, SAS.bins$AVG_AF)
+  
+  labels <- c(rep("Africa", length(AFR_prop)), rep("Europe", length(EUR_prop)), 
+              rep("East Asia", length(EAS_prop)), rep("South Asia", length(SAS_prop)))
+  dat <- data.frame(cbind(props, bins, labels))
+  names(dat)<- c("proportions", "AF", "POP")
+  
+  YU = max(props)
+  YL = min(props)
+  XU = max(log10(bins))
+  XL = min(log10(bins))
+  
+  #ggplot method
+  SFSplot <- ggplot(dat, aes(x = bins, y = props, group = labels, color = labels),
+                    xlim = c(XL, XU), ylim = c(YL, YU)) +
+              geom_line(size = 1)+
+              scale_y_continuous(name = bquote(.(ref)%->%.(alt) ~ .("proportion"))) +
+              scale_x_log10(name = "Alternate allele frequency") +
+              scale_color_manual("", values = c("forestgreen", "red", "darkblue", "magenta"))
+  
+  if (!leg){
+    SFSplot <- SFSplot + theme(legend.position = "none")
+  }
+  else {
+    SFSplot <- SFSplot + theme(legend.position = c(0.16, 0.3), 
+                               legend.title = element_blank(), 
+                               legend.key.size = unit(0.5, "cm"),
+                               legend.margin = unit(0.7, "cm"))
+  }
+  
+  if (!xlabel){
+    SFSplot <- SFSplot + theme(axis.text.x = element_blank(),
+                               axis.title.x = element_blank(),
+                               axis.ticks.x = element_blank())
+  }
+
+  return(SFSplot)
+}
+```
+
+```{r S2 make figure, fig.height= 3}
+a <- SFS.plot(AFR_AF_counts, AFR_AF_bins, EUR_AF_counts, EUR_AF_bins, 
+         EAS_AF_counts, EAS_AF_bins, SAS_AF_counts, SAS_AF_bins, "TCG->T", 1, leg = T, xlabel = F)
+b <- SFS.plot(AFR_AF_counts, AFR_AF_bins, EUR_AF_counts, EUR_AF_bins, 
+         EAS_AF_counts, EAS_AF_bins, SAS_AF_counts, SAS_AF_bins, "ACG->T", 1, leg = F, xlabel = F)
+c <- SFS.plot(AFR_AF_counts, AFR_AF_bins, EUR_AF_counts, EUR_AF_bins, 
+         EAS_AF_counts, EAS_AF_bins, SAS_AF_counts, SAS_AF_bins, "GCG->T", 1, leg = F)
+d <- SFS.plot(AFR_AF_counts, AFR_AF_bins, EUR_AF_counts, EUR_AF_bins, 
+         EAS_AF_counts, EAS_AF_bins, SAS_AF_counts, SAS_AF_bins, "CCG->T", 1, leg = F)
+
+grid.arrange(a, b, c, d, ncol = 2)
+```
+
+**Supplementary Figure 2:** *No doubleton excess in CpG mutation profile*.  Plots of the proportion of each type of CpG substitution in each population across allele frequency bins.  Since singletons are removed from this analysis, a doubleton excess would be reflected in an especially high proportion of CpG mutations in the lowest alternative allele frequency bin.  While we do not observe a doubleton excess, we do see an unexplained depletion of tripleton CpG variants in Asia and Africa for most CpG substitutions, reflected in the immediate dip in substitution proportion in the second smallest allele frequency bin for African and Asian populations.
+
+***********************************************************************************************************
+
+\pagebreak
+
+```{r S3 upload data}
+
+```
+
+```{r S3 functions}
+
+```
+
+```{r S3 make figure}
+
+```
+
+**Supplementary Figure 3:** 
+
+***********************************************************************************************************
+
+# TODO
+•	CI and chromosome plots for top 3-mer signals
+•	Subrate scatterplots top 3mer signals
+•	Subrate scatterplots for *AC->C
+•	FDR and p values for all significant results for 3-mer, 5-mer, 7-mer 
+•	CI plot for AAACAAA->A
