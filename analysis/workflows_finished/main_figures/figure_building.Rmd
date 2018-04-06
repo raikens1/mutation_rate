@@ -181,7 +181,7 @@ table1 <- head(table1, 15)
 
 # plot significant 7mers and print most signif. new results
 kable(table1, digits = 600, row.names = F,
-      caption = "10 most significant new 7mers using ordered p value correction")
+      caption = "15 most significant new 7mers using ordered p value correction")
 ```
 
 Certain table entries are bold if they are significantly enriched in Africa.  The code below calculates which threemers are significantly different (p<1e-5) between AFR and EUR in table 1.
@@ -230,7 +230,6 @@ subpops.names <- c("TSI", "IBS", "CEU", "GBR", "FIN", "STU", "ITU", "BEB", "GIH"
 ```{r F1A setup methods}
 # helper function that normalizes a vector by z or L1 method
 norm <- function(vec, method = c("z", "L1", "fdiff")){
-  
   if (method == "L1"){ # normalize so vector sums to 1
     u <- vec/sum(abs(vec))}
   else if (method == "z"){ # normalize to mean 0, variance 1
@@ -268,8 +267,7 @@ make.heatmap <- function(data, logunits = T){
   dr.ordered <- reorder(as.dendrogram(dr), wts = weights.dr, agglo.FUN = mean)
   
   heatmap.2(data, Rowv = dr.ordered, Colv = as.dendrogram(dc),
-            trace = 'none', col=colorRampPalette(c('blue', "white", 'red'))(n = 1000),
-            labRow = T,
+            trace = 'none', col=colorRampPalette(c('blue', "white", 'red'))(n = 1000), labRow = T, #to remove row names
             density.info = 'none', key.xlab = "fold differece vs. mean\n(log base 2 scale)",
             key.title = NA, keysize = 0.5, key.par = list(cex=0.65),
             lhei = c(1,5.5), lwid = c(1,4))
@@ -447,7 +445,6 @@ subrate.scplot <- function(count1, count2, mut, pops = c("Pop 1", "Pop 2"), labe
   ref <- substr(mut, 1, n-3)
   alt <- substr(mut, n, n)
   
-
   #make plot
   p_plot <- qplot(pop1.mut$Rate, pop2.mut$Rate) +
     labs(x = bquote(.(ref)%->%.(alt) ~ .(paste("mutation rate in", pops[1]))), y = bquote(.(ref)%->%.(alt) ~ .(paste("mutation rate in", pops[2])))) +

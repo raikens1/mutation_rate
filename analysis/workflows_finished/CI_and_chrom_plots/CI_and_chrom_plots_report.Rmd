@@ -80,8 +80,10 @@ I use a handful of different plotting methods to gain different perpectives on t
 * **CI.plot** Given count dataframes for four populations and a polymorphism of interest $m$, plot the inferred mutation rates of $m$ in each population with approximate confidence intervals.
 
 ```{r def CI plot, echo = F}
-CI.plot <- function(AFR, EUR, EAS, SAS, mut) {
-  
+CI.plot <- function(AFR, EUR, EAS, SAS, mut, small = F) {
+  n <- nchar(mut)
+  ref <- substr(mut, 1, n-3)
+  alt <- substr(mut, n, n)
   mut.i <- which(AFR$Context == mut)
   popnames <- c("Africa","Europe", "South\nAsia", "East\nAsia")
   colors <- c("forestgreen", "darkblue", "magenta","red")
@@ -111,14 +113,20 @@ CI.plot <- function(AFR, EUR, EAS, SAS, mut) {
   df <- data.frame(cbind(popnames, theta*norm, L*norm, U*norm))
   plotcol <- reorder(colors, theta*norm)
   
-  CI.plot <- ggplot(df, aes(reorder(popnames, c(1,2,3,4)), theta*norm)) +
-    geom_point(size = 4, color = plotcol) +
+  CIplot <- ggplot(df, aes(reorder(popnames, c(1,2,3,4)), theta*norm)) +
+    geom_point(size = 2, color = plotcol) +
     geom_errorbar(aes(ymax = U*norm, ymin = L*norm), color = plotcol, size =.75)+
-    labs(title = paste("Estimated mutation\nrate of", mut), y = NULL) + #y axis label
+    labs(title = bquote("Estimated mutation rate of" ~ .(ref)%->%.(alt)), y = NULL) + #y axis label
     theme(axis.text.x = element_text(size = rel(.9)), axis.title.x = element_blank(), #adjust text sizes
           axis.title.y = element_text(size = rel(.9)), axis.text.y = element_text(size = rel(.9), angle = 0, hjust = 0.5), title = element_text(size = rel(.7)),
           legend.position = 'none')
-  return(CI.plot)
+  
+  if (small) {
+    CIplot <- CIplot + theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())+
+      labs(title = bquote(.(ref)%->%.(alt)))
+  }
+  
+  return(CIplot)
 }
 ```
 
@@ -130,6 +138,9 @@ colors.all <- c(rep("forestgreen", 5), rep("orange", 6),
 
 
 CI.plot.subpop <- function(subpops, mut, popnames, colors = colors.ancestral){
+  n <- nchar(mut)
+  ref <- substr(mut, 1, n-3)
+  alt <- substr(mut, n, n)
   n.pops <- length(subpops)
   mut.i <- which(subpops[[1]]$Context == mut)
   
@@ -160,7 +171,7 @@ CI.plot.subpop <- function(subpops, mut, popnames, colors = colors.ancestral){
   ggplot(df, aes(reorder(popnames, poplabs), theta*norm)) +
     geom_point(size = 4, color = plotcol) +
     geom_errorbar(aes(ymax = U*norm, ymin = L*norm), color = plotcol, size = 0.75)+
-    labs(y = paste("Estimated mutation rate of ", mut,"\n")) + #y axis label
+    labs(y = bquote("Estimated mutation rate of" ~ .(ref)%->%.(alt))) + #y axis label
     theme(axis.text.x = element_text(size = rel(1), angle = 45, hjust = 1), axis.title.x = element_blank(), #adjust text sizes
           axis.title.y = element_text(size = rel(1)), axis.text.y = element_text(size = rel(.9)),
           legend.position = 'none')
@@ -175,7 +186,11 @@ chrom.box <- function(AFR, EUR, EAS, SAS, gw, mut){
   #get data
   chrom.dat <- chrom.process.data(AFR, EUR, EAS, SAS, gw, mut)
   
-  #find outliers; THIS DOESN'T WORK :(
+  n <- nchar(mut)
+  ref <- substr(mut, 1, n-3)
+  alt <- substr(mut, n, n)
+  
+  #find outliers
   AFR.rates <- subset(chrom.dat, chrom.dat$pop == "Africa")
   AFR.outliers <- subset(AFR.rates, is_outlier(AFR.rates$rate)==TRUE)
   EUR.rates <- subset(chrom.dat, chrom.dat$pop == "Europe")
@@ -188,14 +203,14 @@ chrom.box <- function(AFR, EUR, EAS, SAS, gw, mut){
   #plot
   c_plot <- ggplot(chrom.dat, aes(pop, rate))+
     geom_boxplot(outlier.color = NA, fill = c("palegreen1",  "steelblue1", 'plum1', "lightcoral"))+
-    labs(x = "\nPopulation", title = paste("Mutation rate of", mut,"\nby chromosome"), y = NULL)+
+    labs(x = "\nPopulation", title = bquote("Mutation rate of" ~ .(ref)%->%.(alt) ~ "by chromosome"), y = NULL)+
     scale_color_manual("", values = c("forest green", "dark blue", 'magenta', "red"))+
     
     #add outlier labels
-    geom_text(data = EUR.outliers, aes(pop, rate, label = chrom), color = "dark blue", nudge_x = 0.1)+
-    geom_text(data = AFR.outliers, aes(pop, rate, label = chrom), color = "forest green", nudge_x = 0.1)+
-    geom_text(data = EAS.outliers, aes(pop, rate, label = chrom), color = "red", nudge_x = 0.1)+
-    geom_text(data = SAS.outliers, aes(pop, rate, label = chrom), color = "magenta", nudge_x = 0.1)+
+    geom_text(data = EUR.outliers, aes(pop, rate, label = chrom), color = "dark blue", nudge_x = 0.25)+
+    geom_text(data = AFR.outliers, aes(pop, rate, label = chrom), color = "forest green", nudge_x = 0.25)+
+    geom_text(data = EAS.outliers, aes(pop, rate, label = chrom), color = "red", nudge_x = 0.25)+
+    geom_text(data = SAS.outliers, aes(pop, rate, label = chrom), color = "magenta", nudge_x = 0.25)+
     
     #add points
     geom_point(aes(color = factor(chrom.dat$pop)), size = 1.2, position = position_jitter(width = 0.1))+
@@ -534,9 +549,9 @@ SAS vs AFR.  Unsurprisingly, this appears to be a 3mer-level signal.
 
 ```{r signal3 heterogeneity, echo = F, fig.height=6}
 a <- subrate.scplot(AFR_7mer_counts, SAS_7mer_counts, "TCG->T", pops = c("AFR", "SAS"))
-b <- subrate.scplot(AFR_7mer_counts, SAS_7mer_counts, "ACG->T", pops = c("AFR", "EAS"))
-c <- subrate.scplot(AFR_7mer_counts, SAS_7mer_counts, "GCG->T", pops = c("AFR", "EAS"))
-d <- subrate.scplot(AFR_7mer_counts, SAS_7mer_counts, "CCG->T", pops = c("AFR", "EAS"))
+b <- subrate.scplot(AFR_7mer_counts, SAS_7mer_counts, "ACG->T", pops = c("AFR", "SAS"))
+c <- subrate.scplot(AFR_7mer_counts, SAS_7mer_counts, "GCG->T", pops = c("AFR", "SAS"))
+d <- subrate.scplot(AFR_7mer_counts, SAS_7mer_counts, "CCG->T", pops = c("AFR", "SAS"))
 grid.arrange(a,b,c, d, ncol = 2)
 ```
 
