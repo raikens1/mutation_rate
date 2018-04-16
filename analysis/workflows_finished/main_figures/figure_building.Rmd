@@ -295,7 +295,7 @@ CI.plot.bygroup <- function(AFR, EUR, EAS, SAS, muts, groupname = "mutation grou
   #NOTE: muts must all be from different contexts.  Otherwise this will do weird things.
   
   muts.i <- which(is.element(AFR$Context, muts))
-  popnames <- c("Africa","Europe", "South\nAsia", "East\nAsia")
+  popnames <- c("Africa","Europe", "South\nAsia\n\n", "East\nAsia\n\n")
   colors <- c("forestgreen", "darkblue", "magenta","red")
   
   #have to do a silly workaround or R will sort popnames alphanumerically
@@ -337,13 +337,13 @@ CI.plot.bygroup <- function(AFR, EUR, EAS, SAS, muts, groupname = "mutation grou
 
 ```{r F1BCD make, fig.height=2.5, fig.width=6.5}
 s1 <- c("TCT->T", "ACC->T", "TCA->T", "CCC->T", "ACT->T", "TCC->T", "GCC->T")
-a <- CI.plot.bygroup(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, s1, "profile 1")
+a <- CI.plot.bygroup(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, s1, "profile #1")
 
 s2 <- c("GAT->T", "ACC->A", "GAC->T")
-b <- CI.plot.bygroup(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, s2, "profile 2")
+b <- CI.plot.bygroup(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, s2, "profile #2")
 
 s4 <-c("ACG->T", "CCG->T", "GCG->T", "TCG->T")
-d <- CI.plot.bygroup(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, s4, "profile 4")
+d <- CI.plot.bygroup(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, s4, "profile #4")
 ```
 
 ## D: CI plots for signal 3
@@ -395,7 +395,7 @@ CI.plot.subpop.bygroup <- function(subpops, muts, popnames, colors = colors.ance
   ggplot(df, aes(reorder(popnames, poplabs), theta*norm)) +
     geom_point(size = 3, color = plotcol) +
     geom_errorbar(aes(ymax = U*norm, ymin = L*norm), color = plotcol, size = .75)+
-    labs(title = paste("Estimated mutation\nrate of ", groupname), y = NULL) + #y axis label
+    labs(title = paste("Estimated mutation\nrate of", groupname), y = NULL) + #y axis label
     theme(axis.text.x = element_text(size = rel(.8), angle = 45, hjust = 1), axis.title.x = element_blank(), #adjust text sizes
           axis.title.y = element_text(size = rel(.8)), axis.text.y = element_text(size = rel(.9)),
           title = element_text(size = rel(.7)),
@@ -410,9 +410,9 @@ popnames1E <- c("Africa", "Europe", "South Asia", "CDX", "KHV", "CHS", "CHB", "J
 muts1E <- c("CAC->C", "TAT->T", "GAC->C", "AAC->C", "TAC->C")
 ```
 
-```{r F1E make, fig.height=2.5, fig.width = 8.5}
-c <- CI.plot.subpop.bygroup(subpops1E, muts1E, popnames1E, colors1E, "profile 3")
-grid.arrange(a,b,c,d,ncol = 4)
+```{r F1E make, fig.height=3, fig.width = 9}
+c <- CI.plot.subpop.bygroup(subpops1E, muts1E, popnames1E, colors1E, "profile #3")
+grid.draw(cbind(ggplotGrob(a), ggplotGrob(b), ggplotGrob(c), ggplotGrob(d), size = "last"))
 ```
 
 # Figure 2
@@ -437,7 +437,7 @@ CDX_EAS_7mer_counts <- read_delim("subpops/7mer/CDX_EAS_7mer_counts.txt", "\t", 
 ```{r F2AB setup methods}
 # given: count1 and count2: pop-specific polymorphism dataframes; Mut: 3mer subcontext of interest,
 # generates a scatter plot of rate for mut in population 1 by population 2
-subrate.scplot <- function(count1, count2, mut, pops = c("Pop 1", "Pop 2"), label = c(), lm = F){
+subrate.scplot <- function(count1, count2, mut, pops = c("Pop 1", "Pop 2"), label = c(), lm = F, lims = c(0,0), widemargin = F){
   pop1.mut <- subset(count1, count1$X3mer == mut)
   pop2.mut <- subset(count2, count2$X3mer == mut)
   sample.size <- pop1.mut$Count + pop2.mut$Count
@@ -457,10 +457,10 @@ subrate.scplot <- function(count1, count2, mut, pops = c("Pop 1", "Pop 2"), labe
           text = element_text(size = 9))+
     geom_point(aes(colour = log(base = 10, x = sample.size)), size = 1.25) + 
     scale_colour_gradient(low = "orange", high = "blue")+
-    geom_abline(aes(intercept=0,slope=1), size = .5) + 
-    coord_fixed(ratio = 1, 
-                xlim = c(0, max(pop1.mut$Rate, pop2.mut$Rate)),
-                ylim = c(0, max(pop1.mut$Rate, pop2.mut$Rate)))
+    geom_abline(aes(intercept=0,slope=1), size = .5)# + 
+    #coord_fixed(ratio = 1, 
+    #            xlim = c(0, max(pop1.mut$Rate, pop2.mut$Rate)),
+    #            ylim = c(0, max(pop1.mut$Rate, pop2.mut$Rate)))
   
   if (lm){
     mod1 <- lm(pop2.mut$Rate ~ pop1.mut$Rate)
@@ -484,14 +484,29 @@ subrate.scplot <- function(count1, count2, mut, pops = c("Pop 1", "Pop 2"), labe
                                    nudge_x = 1.5e-9, nudge_y = 1.5e-9, color = "purple4")
     }
   }
+  
+  if (sum(lims) != 0){
+    p_plot <- p_plot + 
+    coord_fixed(ratio = 1, 
+                xlim = lims,
+                ylim = lims)
+  } else {
+    p_plot <- p_plot +
+          coord_fixed(ratio = 1, 
+                xlim = c(0, max(pop1.mut$Rate, pop2.mut$Rate)),
+                ylim = c(0, max(pop1.mut$Rate, pop2.mut$Rate)))
+  }
 
+  if (widemargin){
+    p_plot <- p_plot + theme(plot.margin = unit(c(2, 1, 4, 1), "lines"))
+  }
   return(p_plot)
 }
 ```
 
 ```{r F2AB make, fig.height=3.25, fig.width=7.5}
-a <- subrate.scplot(CDX_EAS_7mer_counts, JPT_EAS_7mer_counts, "ACG->T", pops = c("Chinese Dai in Xishuangbana", "Japanese in Tokyo"))
-b <- subrate.scplot(EAS_7mer_counts, EUR_7mer_counts, "TCC->T", pops = c("East Asia", "Europe"))
+a <- subrate.scplot(CDX_EAS_7mer_counts, JPT_EAS_7mer_counts, "ACG->T", pops = c("Chinese Dai", "Japanese"))
+b <- subrate.scplot(EAS_7mer_counts, EUR_7mer_counts, "TCC->T", pops = c("East Asia", "Europe"), lims = c(0,1.945e-8))
 grid.arrange(a, b, ncol = 2)
 ```
 
@@ -616,10 +631,10 @@ EASsubpops <- list(CDX_EAS_7mer_counts, KHV_EAS_7mer_counts, CHS_EAS_7mer_counts
 EASpopnames <- c("CDX", "KHV", "CHS", "CHB", "JPT")
 ```
 
-```{r F3BC make, fig.height = 3.25, fig.width = 7}
-b <- subrate.scplot(CDX_EAS_7mer_counts, JPT_EAS_7mer_counts, "AAC->C", c("Chinese Dai", "Japanese in Tokyo"), JPT7mers)
-c <- CI.plot.subpop.bygroup(EASsubpops, JPT7mers, EASpopnames, rep("red", 5), "profile four 7-mers")
-grid.arrange(b,c, ncol =2 )
+```{r F3BC make, fig.height = 4, fig.width = 7}
+b <- subrate.scplot(CDX_EAS_7mer_counts, JPT_EAS_7mer_counts, "AAC->C", c("Chinese Dai", "Japanese"), JPT7mers, lims = c(0,1.24e-8), widemargin = T)
+c <- CI.plot.subpop.bygroup(EASsubpops, JPT7mers, EASpopnames, rep("red", 5), "significant 7-mers within profile #4")
+grid.draw(cbind(ggplotGrob(b), ggplotGrob(c), size = "last"))
 ```
 
 # Figure 4
@@ -736,12 +751,13 @@ b <- ggplot(df, aes(reorder(popnames, c(1,2,3,4)), theta*norm)) +
   geom_errorbar(aes(ymax = U*norm, ymin = L*norm), color = plotcol, size =.75)+
   labs(y =  bquote(paste("Mutation rate of")~.("TTTAAAA")%->%.("T")~paste("and")~.("TTTAAAA")%->%.("T"))) + #y axis label
   theme(axis.text.x = element_text(size = rel(.9)), axis.title.x = element_blank(), #adjust text sizes
-        axis.title.y = element_text(size = rel(.9)), axis.text.y = element_text(size = rel(1), angle = 0, hjust = 0.5), title = element_text(size = rel(.7)),
+        axis.title.y = element_text(size = rel(1)), axis.text.y = element_text(size = rel(1), angle = 0, hjust = 0.5), title = element_text(size = rel(.7)),
         legend.position = 'none')
 ```
 
 ```{r F4BC make, fig.width=7, fig.height = 3.25}
-c <- subrate.scplot(EUR_7mer_counts, AFR_7mer_counts, "TAA->T", c("Europe", "Africa"), c("ATTAAAA->T", "TTTAAAA->T"))
+c <- subrate.scplot(EUR_7mer_counts, AFR_7mer_counts, "TAA->T", c("Europe", "Africa"), c("ATTAAAA->T", "TTTAAAA->T"), lims = c(0, 2.05e-8))
 grid.arrange(b, c, ncol = 2)
+grid.draw(cbind(ggplotGrob(b), ggplotGrob(c), size = "last"))
 ```
 

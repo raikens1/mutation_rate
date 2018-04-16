@@ -120,7 +120,7 @@ get.3mer.subcontext.data <- function(rates, muts, labels){
  
 ```{r def heatmaps, echo = F}
 # makes a heatmap of a matrix and returns the row dendrogram as an object
-make.heatmap <- function(data, logunits = T){
+make.heatmap <- function(data, logunits = T, metric = "euclidean"){
   
   complete <- apply(data, 1, function(row) all(row != 0) & all(!is.na(row)))
   data <- data[complete,]
@@ -129,8 +129,8 @@ make.heatmap <- function(data, logunits = T){
     data <- log2(data)
   }
   
-  dr <- hclust(dist(data))
-  dc <- hclust(dist(t(data)))
+  dr <- hclust(dist(data, method = metric))
+  dc <- hclust(dist(t(data), method = metric))
   
   heatmap.2(data, Rowv = as.dendrogram(dr), Colv = as.dendrogram(dc),
             trace = 'none', col=colorRampPalette(c('blue', "white", 'red'))(n = 1000),
@@ -163,7 +163,7 @@ This section provides an overview of some mutational signals that I think are bo
 The most basic heatmap we can imagine making first is a clustering of all 3mer polymorphism types.  This can show us some groups of mutations which appear to be acting together at the 3mer level.  You can see a couple separate blocks of signal below:
 
 ```{r 3mer heatmap, echo = F}
-dr.3.all <- make.heatmap(norm.3mer.rates)
+dr.3.all <- make.heatmap(norm.3mer.rates, logunits = T)
 ```
 
 There are a couple observations to make about this plot:

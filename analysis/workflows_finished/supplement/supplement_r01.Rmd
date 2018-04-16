@@ -685,6 +685,7 @@ ordered.p <- function(pdata){
 
 
 ```{r S table 1 make}
+setwd("../workflows_finished/supplement")
 # calculate ordered p values
 p.3mer <- fourway.chi(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts)
 o.p.3mer <- ordered.p(p.3mer)
@@ -697,6 +698,7 @@ write.table(o.sig.3mers, "supplemetary_table_1.csv", quote = F, sep = ",", row.n
 ```
 
 ```{r table S2 make}
+setwd("../workflows_finished/supplement")
 # calculate ordered p values
 p.5mer <- fourway.chi(AFR_5mer_counts, EUR_5mer_counts, EAS_5mer_counts, SAS_5mer_counts)
 o.p.5mer <- ordered.p(p.5mer)
@@ -709,6 +711,7 @@ write.table(o.sig.5mers, "supplemetary_table_2.csv", quote = F, sep = ",", row.n
 ```
 
 ```{r table S3 make}
+setwd("../workflows_finished/supplement")
 # calculate ordered p values
 p.7mer <- fourway.chi(AFR_7mer_counts, EUR_7mer_counts, EAS_7mer_counts, SAS_7mer_counts)
 o.p.7mer <- ordered.p(p.7mer)
