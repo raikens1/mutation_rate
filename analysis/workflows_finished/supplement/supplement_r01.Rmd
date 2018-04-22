@@ -19,6 +19,10 @@ library(gridExtra);library(grid)
 require(ggrepel)
 ```
 
+# Supplementary Tables
+
+**Supplementary Table 1:** All (A) 3-mer, (B) 5-mer, and (C) 7-mer subsitutions significantly heterogeneous across continental groups after ordered p-value correction.  Relevant sub-contexts, counts in each population, and total number of contexts in the included regions of the genome are shown for each significant substitution type.  Substitutions are listed in increasing order of significance.
+
 # Supplementary Figures
 
 ```{r S1 upload data}
@@ -91,7 +95,7 @@ volcano.plot <- function(counts.1, counts.2,
           axis.title.y = element_text(size = rel(1.1)), axis.text.y = element_text(size = rel(1.35)), 
           legend.text = element_text(size = rel(1.1)), legend.position = legpos,
           title = element_text(size = rel(1.2))) + # legend position and size 
-    xlim(c(-.4, .6)) + ylim(c(0, 400))
+    xlim(c(-.4, .6)) + ylim(c(0, 300))
   
   return(v_plot)
 }
@@ -99,15 +103,17 @@ volcano.plot <- function(counts.1, counts.2,
 
 ```{r S1 make figure}
 pEURvAFR <- pairwise.chi(EUR_3mer_counts, AFR_3mer_counts, filter = F)
+# substitute 1e-300 for p for TCC->T to fix plot dimensions
+
+pEURvAFR[which(pEURvAFR$p == 0),]$p <- 1e-300 
+
 a <- volcano.plot(EUR_3mer_counts, AFR_3mer_counts, pEURvAFR, 1e-25, c("Europe", "Africa"), legpos = "none")
 pEASvAFR <- pairwise.chi(EAS_3mer_counts, AFR_3mer_counts, filter = F)
 b <- volcano.plot(EAS_3mer_counts, AFR_3mer_counts, pEASvAFR, 1e-25, c("East Asia", "Africa"))
 grid.arrange(a,b, ncol= 2)
 ```
 
-**Supplementary Figure 1:** *Replication of Figure 1 from Kelley Harris, 2015*. Using our variant filtration pipleline for extracting population-private variants from the Phase III 1,000 Genomes Dataset, we recapitulate Harris's previous findings from analysis of the Phase I Release.  In keeping with Harris, 2015, the proportions of private 3mer substitutions were compared between pairs of populations using a pairwise chi-squared test.  Ordered p-value correction was not applied.  Unlike Harris, we choose to consider reverse-complimentary substitution classes as identical (e.g. TCC$\rightarrow$TTC and GGA$\rightarrow$ GAA are considered equivalent).
-
-***********************************************************************************************************
+**Supplementary Figure 1:** *Replication of Figure 1 from Kelley Harris, 2015*. Using our variant filtration pipleline for extracting population-private variants from the Phase III 1,000 Genomes Dataset, we recapitulate Harris's previous findings from analysis of the Phase I Release.  In keeping with Harris, 2015, the proportions of private 3mer substitutions were compared between pairs of populations using a pairwise chi-squared test.  Ordered p-value correction was not applied.  Unlike Harris, we choose to consider reverse-complimentary substitution classes as identical (e.g. TCC$\rightarrow$TTC and GGA$\rightarrow$ GAA are considered equivalent).  The p-value for TCC$\rightarrow$T in Europe versus Africa was too small to be represented in R; here it is shown rounded to 1$\times10^{-300}$. 
 
 \pagebreak
 
@@ -261,25 +267,29 @@ CI.plot <- function(AFR, EUR, EAS, SAS, mut, small = F) {
 }
 ```
 
+```{r, fig.keep = "none" }
+blank <- grid.rect(gp=gpar(col="white"))
+```
+
+
 ```{r S3 make figure, fig.height = 8, fig.width=7}
 a <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "TCC->T", small = F)
 b <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "ACC->T", small = F)
 c <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "TCT->T", small = F)
 d <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "CCC->T", small = F)
-e <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "TCG->T", small = F)
-f <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "ACG->T", small = F)
-g <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "GCG->T", small = F)
+e <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "TCA->T", small = F)
+f <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "ACT->T", small = F)
+g <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "GCC->T", small = F)
 h <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "GAT->T", small = F)
 i <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "ACC->A", small = F)
-j <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "ACA->T", small = F)
-k <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "TCA->T", small = F)
-l <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "ACT->T", small = F)
-m <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "GCT->T", small = F)
-n <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "GAC->T", small = F)
-o <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "GCC->T", small = F)
+j <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "GCT->T", small = F)
+k <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "GAC->T", small = F)
+l <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "TCG->T", small = F)
+m <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "ACG->T", small = F)
+n <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "GCG->T", small = F)
+o <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "ACA->T", small = F)
 
-
-grid.arrange(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o, ncol = 4)
+grid.arrange(a,b,c,d,e,f,g,blank, h,i,j,k,l,m,n,o, ncol = 4)
 ```
 
 **Supplementary Figure 3:** Approximate 95% confidence interval estimates of inferred mutation rate for each highly significantly variable 3-mer type across Africa (AFR), Europe (EUR), South Asia (SAS), and East Asia (EAS).
@@ -376,20 +386,20 @@ a <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_count
 b <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, gw_3mer_counts, "ACC->T")
 c <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, gw_3mer_counts, "TCT->T")
 d <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, gw_3mer_counts, "CCC->T")
-e <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, gw_3mer_counts, "TCG->T")
-f <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, gw_3mer_counts, "ACG->T")
-g <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, gw_3mer_counts, "GCG->T")
+e <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, gw_3mer_counts, "TCA->T")
+f <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, gw_3mer_counts, "ACT->T")
+g <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, gw_3mer_counts, "GCC->T")
 h <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, gw_3mer_counts, "GAT->T")
 i <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, gw_3mer_counts, "ACC->A")
-j <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, gw_3mer_counts, "ACA->T")
-k <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, gw_3mer_counts, "TCA->T")
-l <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, gw_3mer_counts, "ACT->T")
-m <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, gw_3mer_counts, "GCT->T")
-n <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, gw_3mer_counts, "GAC->T")
-o <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, gw_3mer_counts, "GCC->T")
+j <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, gw_3mer_counts, "GCT->T")
+k <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, gw_3mer_counts, "GAC->T")
+l <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, gw_3mer_counts, "TCG->T")
+m <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, gw_3mer_counts, "ACG->T")
+n <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, gw_3mer_counts, "GCG->T")
+o <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, gw_3mer_counts, "ACA->T")
 
 
-grid.arrange(a,b,c,d,e,f,g,h,i,j,k,l,m,n,o, ncol = 4)
+grid.arrange(a,b,c,d,e,f,g,blank,h,i,j,k,l,m,n,o, ncol = 4)
 ```
 
 **Supplementary Figure 4:** Box plots of inferred private mutation rate across chromosomes for each highly significantly variable 3-mer type.  Outlier points are labeled with chromosome.
@@ -678,7 +688,8 @@ ordered.p <- function(pdata){
     #add these mutations to the not.mutated counts for future tests
     not.mut <- not.mut + mut
   }
-  pdata$p <- p.ordered
+  pdata$p <- NULL
+  pdata$p_ordered <- p.ordered
   return(pdata)
 }
 ```
@@ -689,12 +700,18 @@ setwd("../workflows_finished/supplement")
 # calculate ordered p values
 p.3mer <- fourway.chi(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts)
 o.p.3mer <- ordered.p(p.3mer)
-o.p.3mer <- o.p.3mer[order(o.p.3mer$p),]
-o.sig.3mers <- subset(o.p.3mer, o.p.3mer$p < 0.05/96)
-colnames(o.sig.3mers) <- c("Context", "1-mer", "Counts in AFR", "Counts in EUR", "Counts in EAS", "Counts in SAS", "p")
+o.p.3mer <- o.p.3mer[order(o.p.3mer$p_ordered),]
+o.sig.3mers <- subset(o.p.3mer, o.p.3mer$p_ordered < 0.05/96)
+colnames(o.sig.3mers) <- c("Context", "1-mer", "Counts in AFR", "Counts in EUR", "Counts in EAS", "Counts in SAS", "p Ordered")
+
+# merge in gw_counts, reorder and rename cols
+o.sig.3mers <- merge(o.sig.3mers, AFR_3mer_counts[,c(1,5)], 
+                     by = "Context", all.x = TRUE, sort = F)
+colnames(o.sig.3mers) <- c("Context", "1-mer", "Counts in AFR", "Counts in EUR", "Counts in EAS", "Counts in SAS", "p Ordered", "Total Contexts in Genome")
+o.sig.3mers <- o.sig.3mers[,c(1:6, 8, 7)]
 
 # save
-write.table(o.sig.3mers, "supplemetary_table_1.csv", quote = F, sep = ",", row.names = F)
+write.table(o.sig.3mers, "supplemetary_table_1A.csv", quote = F, sep = ",", row.names = F)
 ```
 
 ```{r table S2 make}
@@ -702,12 +719,17 @@ setwd("../workflows_finished/supplement")
 # calculate ordered p values
 p.5mer <- fourway.chi(AFR_5mer_counts, EUR_5mer_counts, EAS_5mer_counts, SAS_5mer_counts)
 o.p.5mer <- ordered.p(p.5mer)
-o.p.5mer <- o.p.5mer[order(o.p.5mer$p),]
-o.sig.5mers <- subset(o.p.5mer, o.p.5mer$p < 0.05/(dim(o.p.5mer)[1]))
-colnames(o.sig.5mers) <- c("Context", "3-mer", "1-mer", "Counts in AFR", "Counts in EUR", "Counts in EAS", "Counts in SAS", "p")
+o.p.5mer <- o.p.5mer[order(o.p.5mer$p_ordered),]
+o.sig.5mers <- subset(o.p.5mer, o.p.5mer$p_ordered < 0.05/(dim(o.p.5mer)[1]))
+
+# merge in gw_counts, reorder and rename cols
+o.sig.5mers <- merge(o.sig.5mers, AFR_5mer_counts[,c(1,6)], 
+                     by = "Context", all.x = TRUE, sort = F)
+colnames(o.sig.5mers) <- c("Context", "3-mer", "1-mer", "Counts in AFR", "Counts in EUR", "Counts in EAS", "Counts in SAS", "p Ordered", "Total Contexts in Genome")
+o.sig.5mers <- o.sig.5mers[,c(1:7, 9, 8)]
 
 # save
-write.table(o.sig.5mers, "supplemetary_table_2.csv", quote = F, sep = ",", row.names = F)
+write.table(o.sig.5mers, "supplemetary_table_1B.csv", quote = F, sep = ",", row.names = F)
 ```
 
 ```{r table S3 make}
@@ -715,10 +737,16 @@ setwd("../workflows_finished/supplement")
 # calculate ordered p values
 p.7mer <- fourway.chi(AFR_7mer_counts, EUR_7mer_counts, EAS_7mer_counts, SAS_7mer_counts)
 o.p.7mer <- ordered.p(p.7mer)
-o.p.7mer <- o.p.7mer[order(o.p.7mer$p),]
-o.sig.7mers <- subset(o.p.7mer, o.p.7mer$p < 0.05/(dim(o.p.7mer)[1]))
-colnames(o.sig.7mers) <- c("Context","5-mer", "3-mer", "1-mer", "Counts in AFR", "Counts in EUR", "Counts in EAS", "Counts in SAS", "p")
+o.p.7mer <- o.p.7mer[order(o.p.7mer$p_ordered),]
+o.sig.7mers <- subset(o.p.7mer, o.p.7mer$p_ordered < 0.05/(dim(o.p.7mer)[1]))
+
+
+# merge in gw_counts, reorder and rename cols
+o.sig.7mers <- merge(o.sig.7mers, AFR_7mer_counts[,c(1,7)], 
+                     by = "Context", all.x = TRUE, sort = F)
+colnames(o.sig.7mers) <- c("Context", "5-mer", "3-mer", "1-mer", "Counts in AFR", "Counts in EUR", "Counts in EAS", "Counts in SAS", "p Ordered", "Total Contexts in Genome")
+o.sig.7mers <- o.sig.7mers[,c(1:8, 10, 9)]
 
 # save
-write.table(o.sig.7mers, "supplemetary_table_3.csv", quote = F, sep = ",", row.names = F)
+write.table(o.sig.7mers, "supplemetary_table_1C.csv", quote = F, sep = ",", row.names = F)
 ```
