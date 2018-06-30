@@ -3,8 +3,8 @@ title: "Chi Squared Tests for Heterogeneity"
 author: "Rachael 'Rocky' Aikens, Voight Lab"
 date: "June 20, 2017"
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
 ---
 
 # Set Up
@@ -13,7 +13,7 @@ output:
 library(knitr)
 
 # set wd
-knitr::opts_knit$set(root.dir = 'C:/Users/VoightLab/Dropbox/SNP_rates/Analyses/chi_squared_tests/data')
+knitr::opts_knit$set(root.dir = '../../data')
 
 # color vector so that plot colorings match Harris
 h.colors <- c("dark blue", "magenta", "purple", "forest green", "#0099FF", "red")
@@ -24,9 +24,9 @@ library(ggplot2)
 library(readr)
 
 removeX <- function(counts){
-  remove <- as.character(nchar(counts$Context[1]))/2+2
+  remove <- nchar(as.character(counts$Context)[1])/2+2
   counts$chrX <- NULL
-  counts$Count <- rowSums(count[,-c(1:remove)])
+  counts$Count <- rowSums(counts[,-c(1:remove)])
   return(counts)
 }
 ```
@@ -35,20 +35,21 @@ This analysis requires data on the counts of each 3mer, 5mer, and 7mer polymorph
 
 ```{r load_data, echo = F}
 # load data
-AFR_3mer_counts <- read.delim('AFR_3mer_counts.txt')
-EUR_3mer_counts <- read.delim('EUR_3mer_counts.txt')
-EAS_3mer_counts <- read.delim('EAS_3mer_counts.txt')
-SAS_3mer_counts <- read.delim('SAS_3mer_counts.txt')
+getwd()
+AFR_3mer_counts <- removeX(read.delim('3mer/AFR_3mer_counts.txt'))
+EUR_3mer_counts <- removeX(read.delim('3mer/EUR_3mer_counts.txt'))
+EAS_3mer_counts <- removeX(read.delim('3mer/EAS_3mer_counts.txt'))
+SAS_3mer_counts <- removeX(read.delim('3mer/SAS_3mer_counts.txt'))
 
-AFR_5mer_counts <- read.delim('AFR_5mer_counts.txt')
-EUR_5mer_counts <- read.delim('EUR_5mer_counts.txt')
-EAS_5mer_counts <- read.delim('EAS_5mer_counts.txt')
-SAS_5mer_counts <- read.delim('SAS_5mer_counts.txt')
+AFR_5mer_counts <- removeX(read.delim('5mer/AFR_5mer_counts.txt'))
+EUR_5mer_counts <- removeX(read.delim('5mer/EUR_5mer_counts.txt'))
+EAS_5mer_counts <- removeX(read.delim('5mer/EAS_5mer_counts.txt'))
+SAS_5mer_counts <- removeX(read.delim('5mer/SAS_5mer_counts.txt'))
 
-AFR_7mer_counts <- read.delim('AFR_7mer_counts.txt')
-EUR_7mer_counts <- read.delim('EUR_7mer_counts.txt')
-EAS_7mer_counts <- read.delim('EAS_7mer_counts.txt')
-SAS_7mer_counts <- read.delim('SAS_7mer_counts.txt')
+AFR_7mer_counts <- removeX(read.delim('7mer/AFR_7mer_counts.txt'))
+EUR_7mer_counts <- removeX(read.delim('7mer/EUR_7mer_counts.txt'))
+EAS_7mer_counts <- removeX(read.delim('7mer/EAS_7mer_counts.txt'))
+SAS_7mer_counts <- removeX(read.delim('7mer/SAS_7mer_counts.txt'))
 
 # example of 7mer dataset
 head(AFR_5mer_counts[,1:8], n = 5)
