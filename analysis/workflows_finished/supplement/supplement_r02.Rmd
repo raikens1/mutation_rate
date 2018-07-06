@@ -1,0 +1,880 @@
+---
+title: "Supplementary Notes"
+author: "Rachael C. Aikens, Kelsey E. Johnson, Benjamin F. Voight"
+date: "July 6, 2018"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, fig.align = "center")
+knitr::opts_knit$set(root.dir = '../../data')
+
+library(ggplot2);library(gplots)
+library(stats);library(readr)
+library(dplyr);library(knitr)
+require(reshape2)
+library(gridExtra);library(grid)
+require(ggrepel)
+```
+
+# Supplementary Tables
+
+**Supplementary Table 1:** All (A) 3-mer, (B) 5-mer, and (C) 7-mer subsitutions significantly heterogeneous across continental groups after ordered p-value correction.  Relevant sub-contexts, counts in each population, and total number of contexts in the included regions of the genome are shown for each significant substitution type.  Substitutions are listed in increasing order of significance.
+
+# Supplementary Figures
+
+```{r S1 upload data}
+AFR_3mer_counts <- read_delim("3mer/AFR_3mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+EUR_3mer_counts <- read_delim("3mer/EUR_3mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+EAS_3mer_counts <- read_delim("3mer/EAS_3mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+SAS_3mer_counts <- read_delim("3mer/SAS_3mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+```
+
+```{r S1 functions}
+# calculates homogeneity test p values for pairwise comparisons of two dfs of counts
+pairwise.chi <- function(counts.1, counts.2, filter = T){
+  n.contexts = length(counts.1$Context)
+  result <- data.frame(matrix(ncol=4,nrow=n.contexts))
+  colnames(result) <- c("Context", "Counts1", "Counts2", "p")
+  
+  result$Context <- counts.1$Context
+  sum.1 <- sum(counts.1$Count)
+  sum.2 <- sum(counts.2$Count)
+
+  for (i in 1:n.contexts){
+    c.a <- c(counts.1$Count[i], counts.2$Count[i])
+    c.b <- c(sum.1, sum.2) - c.a
+    data <- cbind(c.a, c.b)
+    
+    result$Counts1[i] <- c.a[1]
+    result$Counts2[i] <- c.a[2]
+    warning <- is(tryCatch(chisq.test(data), warning = function(w) w), "warning")
+    if (filter == T & warning){
+      result$p[i] <- NA
+    }
+    else result$p[i] <- chisq.test(data)$p.value
+  }
+  
+  return(result)
+}
+
+#color vector so that plot colorings match Harris
+h.colors <- c("dark blue", "magenta", "purple", "forest green", "#0099FF", "red")
+
+#volcano plot function as in Harris 2015
+volcano.plot <- function(counts.1, counts.2, 
+                         p.vals, lab.lim, 
+                         pops = c("Population 1", "Population 2"), 
+                         legpos = c(0.2, 0.75)){
+  
+  f.1 <- counts.1$Count/sum(counts.1$Count)
+  f.2 <- counts.2$Count/sum(counts.2$Count)
+  f.diff <- (f.1 -f.2)/f.2
+  alpha <- 0.05/(6*length(counts.1$Count))
+  
+  sigs <- subset(counts.1, p.vals$p < lab.lim)
+  f.diff.sigs <- subset(f.diff, p.vals$p < lab.lim)
+  p.sigs <- subset(p.vals, p.vals$p < lab.lim)
+  
+  v_plot <- qplot(f.diff, -log10(p.vals$p)) +
+    labs(x = paste("Fold excess in", pops[1]) , 
+         y = expression(-log[10](italic(p))), 
+         title = paste(pops[1], "v", pops[2])) +
+    scale_color_manual("", values = h.colors)+ # set colors
+    geom_text(data = sigs, aes(f.diff.sigs, -log10(p.sigs$p), label = sigs$Context, color = sigs$X1mer), 
+              vjust = 1, nudge_y =-1, hjust = 1, nudge_x = -.03, size = 3, check_overlap = TRUE)+ # label highly significant
+    geom_point(aes(color=factor(counts.1$X1mer)), size = 3)+ # Color pts by one_mer
+    geom_hline(yintercept = -log10(alpha), color = "black", linetype = 2)+# significance line
+    theme(axis.text.x = element_text(size = rel(1.3)), axis.title.x = element_text(size = rel(1.1)), # adjust text sizes
+          axis.title.y = element_text(size = rel(1.1)), axis.text.y = element_text(size = rel(1.35)), 
+          legend.text = element_text(size = rel(1.1)), legend.position = legpos,
+          title = element_text(size = rel(1.2))) + # legend position and size 
+    xlim(c(-.4, .6)) + ylim(c(0, 300))
+  
+  return(v_plot)
+}
+```
+
+```{r S1 make figure}
+pEURvAFR <- pairwise.chi(EUR_3mer_counts, AFR_3mer_counts, filter = F)
+# substitute 1e-300 for p for TCC->T to fix plot dimensions
+
+pEURvAFR[which(pEURvAFR$p == 0),]$p <- 1e-300 
+
+a <- volcano.plot(EUR_3mer_counts, AFR_3mer_counts, pEURvAFR, 1e-25, c("Europe", "Africa"), legpos = "none")
+pEASvAFR <- pairwise.chi(EAS_3mer_counts, AFR_3mer_counts, filter = F)
+b <- volcano.plot(EAS_3mer_counts, AFR_3mer_counts, pEASvAFR, 1e-25, c("East Asia", "Africa"))
+grid.arrange(a,b, ncol= 2)
+```
+
+**Supplementary Figure 1:** *Replication of Figure 1 from Kelley Harris, 2015*. Using our variant filtration pipleline for extracting population-private variants from the Phase III 1,000 Genomes Dataset, we recapitulate Harris's previous findings from analysis of the Phase I Release.  In keeping with Harris, 2015, the proportions of private 3mer substitutions were compared between pairs of populations using a pairwise chi-squared test.  Ordered p-value correction was not applied.  Unlike Harris, we choose to consider reverse-complimentary substitution classes as identical (e.g. TCC$\rightarrow$TTC and GGA$\rightarrow$ GAA are considered equivalent).  The p-value for TCC$\rightarrow$T in Europe versus Africa was too small to be represented in R; here it is shown rounded to 1$\times10^{-300}$. 
+
+\pagebreak
+
+```{r S2 upload data}
+# Africa
+AFR_AF_bins <- read_delim("by_AF/v1_m_4000/AFR_sortedSNPs_bins.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+AFR_AF_counts <- read_delim("by_AF/v1_m_4000/AFR_AF_3mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+
+# Europe
+EUR_AF_bins <- read_delim("by_AF/v1_m_4000/EUR_sortedSNPs_bins.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+EUR_AF_counts <- read_delim("by_AF/v1_m_4000/EUR_AF_3mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+
+# East Asia
+EAS_AF_bins <- read_delim("by_AF/v1_m_4000/EAS_sortedSNPs_bins.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+EAS_AF_counts <- read_delim("by_AF/v1_m_4000/EAS_AF_3mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+
+# South Asia
+SAS_AF_bins <- read_delim("by_AF/v1_m_4000/SAS_sortedSNPs_bins.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+SAS_AF_counts <- read_delim("by_AF/v1_m_4000/SAS_AF_3mer_counts.txt", "\t", escape_double = FALSE, trim_ws = TRUE)
+```
+
+```{r S2 functions}
+SFS.plot <- function(AFR, AFR.bins, EUR, EUR.bins, EAS, EAS.bins, SAS, SAS.bins, mut, before, leg = T, xlabel = T){
+  i <- which(AFR$Context == mut)
+  n <- nchar(mut)
+  ref <- substr(mut, 1, n-3)
+  alt <- substr(mut, n, n)
+  
+  #based on sequence context, figure out which text columns to remove
+  remove <- c(seq(before+1))
+  
+  #calculate mutation proportion across AF bin for each pop
+  AFR_prop <- AFR[i, -remove]/colSums(AFR[,-remove])
+  EUR_prop <- EUR[i, -remove]/colSums(EUR[,-remove])
+  EAS_prop <- EAS[i, -remove]/colSums(EAS[,-remove])
+  SAS_prop <- SAS[i, -remove]/colSums(SAS[,-remove])
+  
+  props <- as.numeric(c(AFR_prop, EUR_prop, EAS_prop, SAS_prop))
+  bins <- c(AFR.bins$AVG_AF, EUR.bins$AVG_AF, EAS.bins$AVG_AF, SAS.bins$AVG_AF)
+  
+  labels <- c(rep("Africa", length(AFR_prop)), rep("Europe", length(EUR_prop)), 
+              rep("East Asia", length(EAS_prop)), rep("South Asia", length(SAS_prop)))
+  dat <- data.frame(cbind(props, bins, labels))
+  names(dat)<- c("proportions", "AF", "POP")
+  
+  YU = max(props)
+  YL = min(props)
+  XU = max(log10(bins))
+  XL = min(log10(bins))
+  
+  #ggplot method
+  SFSplot <- ggplot(dat, aes(x = bins, y = props, group = labels, color = labels),
+                    xlim = c(XL, XU), ylim = c(YL, YU)) +
+              geom_line(size = 1)+
+              scale_y_continuous(name = bquote(.(ref)%->%.(alt) ~ .("proportion"))) +
+              scale_x_log10(name = "Alternate allele frequency") +
+              scale_color_manual("", values = c("forestgreen", "red", "darkblue", "magenta"))
+  
+  if (!leg){
+    SFSplot <- SFSplot + theme(legend.position = "none")
+  }
+  else {
+    SFSplot <- SFSplot + theme(legend.position = c(0.16, 0.3), 
+                               legend.title = element_blank(), 
+                               legend.key.size = unit(0.5, "cm"),
+                               legend.margin = unit(0.7, "cm"))
+  }
+  
+  if (!xlabel){
+    SFSplot <- SFSplot + theme(axis.text.x = element_blank(),
+                               axis.title.x = element_blank(),
+                               axis.ticks.x = element_blank())
+  }
+
+  return(SFSplot)
+}
+```
+
+```{r S2 make figure, fig.height= 4}
+a <- SFS.plot(AFR_AF_counts, AFR_AF_bins, EUR_AF_counts, EUR_AF_bins, 
+         EAS_AF_counts, EAS_AF_bins, SAS_AF_counts, SAS_AF_bins, "TCG->T", 1, leg = T, xlabel = F)
+b <- SFS.plot(AFR_AF_counts, AFR_AF_bins, EUR_AF_counts, EUR_AF_bins, 
+         EAS_AF_counts, EAS_AF_bins, SAS_AF_counts, SAS_AF_bins, "ACG->T", 1, leg = F, xlabel = F)
+c <- SFS.plot(AFR_AF_counts, AFR_AF_bins, EUR_AF_counts, EUR_AF_bins, 
+         EAS_AF_counts, EAS_AF_bins, SAS_AF_counts, SAS_AF_bins, "GCG->T", 1, leg = F)
+d <- SFS.plot(AFR_AF_counts, AFR_AF_bins, EUR_AF_counts, EUR_AF_bins, 
+         EAS_AF_counts, EAS_AF_bins, SAS_AF_counts, SAS_AF_bins, "CCG->T", 1, leg = F)
+
+grid.arrange(a, b, c, d, ncol = 2)
+```
+
+**Supplementary Figure 2:** *No doubleton excess in CpG mutation profile*.  Plots of the proportion of each type of CpG substitution in each population across allele frequency bins.  Since singletons are removed from this analysis, a doubleton excess would be reflected in an especially high proportion of CpG mutations in the lowest alternative allele frequency bin.  While we do not observe a doubleton excess, we do see an unexplained depletion of tripleton CpG variants in Asia and Africa for most CpG substitutions, reflected in the immediate dip in substitution proportion in the second smallest allele frequency bin for African and Asian populations.
+
+***********************************************************************************************************
+
+\pagebreak
+
+```{r S3 upload data}
+gw_3mer_counts <- read_delim("gw_counts/gw_3mer_counts.txt", 
+                             "\t", escape_double = FALSE, trim_ws = TRUE)
+```
+
+```{r S3 functions}
+CI.plot <- function(AFR, EUR, EAS, SAS, mut, small = F) {
+  n <- nchar(mut)
+  ref <- substr(mut, 1, n-3)
+  alt <- substr(mut, n, n)
+  mut.i <- which(AFR$Context == mut)
+  popnames <- c("AFR","EUR", "SAS", "EAS")
+  colors <- c("forestgreen", "darkblue", "magenta","red")
+  
+  #have to do a silly workaround or R will sort popnames alphanumerically
+  poplabs <- factor(popnames, levels= popnames)
+  
+  #cycle through pops and get counts for mut
+  counts <- rep(0, 4)
+  sums <- rep(0, 4)
+  pops <- list(AFR, EUR, SAS, EAS)
+  
+  for (i in 1:length(pops)){
+    counts[i] <- pops[[i]]$Count[mut.i]
+    sums[i]<- sum(pops[[i]]$Count)
+  }
+  
+  #estimate substitution probability
+  N.c <- AFR$context_in_genome[mut.i] 
+  theta <- counts/N.c
+  L <- theta - 1.96*sqrt(theta*(1-theta)/N.c)
+  U <- theta + 1.96*sqrt(theta*(1-theta)/N.c)
+  
+  #normalize to rate estimate; assume genome wide subsitution probability is measured without error
+  norm <- 1.2E-8*(sum(as.numeric(AFR$context_in_genome))/3)/sums
+  
+  df <- data.frame(cbind(popnames, theta*norm, L*norm, U*norm))
+  plotcol <- reorder(colors, theta*norm)
+  
+  CIplot <- ggplot(df, aes(reorder(popnames, c(1,2,3,4)), theta*norm)) +
+    geom_point(size = 2, color = plotcol) +
+    geom_errorbar(aes(ymax = U*norm, ymin = L*norm), color = plotcol, size =.75)+
+    labs(title = bquote(.(ref)%->%.(alt) ~ "mutation rate"), y = NULL) + #y axis label
+    theme(axis.text.x = element_text(size = rel(.7)), axis.title.x = element_blank(), #adjust text sizes
+          axis.title.y = element_text(size = rel(.7)), axis.text.y = element_text(size = rel(.7), angle = 0, hjust = 0.5), title = element_text(size = rel(.5)),
+          legend.position = 'none')
+  
+  if (small) {
+    CIplot <- CIplot + theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())+
+      labs(title = bquote(.(ref)%->%.(alt)))
+  }
+  
+  return(CIplot)
+}
+```
+
+```{r, fig.keep = "none" }
+blank <- grid.rect(gp=gpar(col="white"))
+```
+
+
+```{r S3 make figure, fig.height = 8, fig.width=7}
+a <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "TCC->T", small = F)
+b <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "ACC->T", small = F)
+c <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "TCT->T", small = F)
+d <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "CCC->T", small = F)
+e <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "TCA->T", small = F)
+f <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "ACT->T", small = F)
+g <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "GCC->T", small = F)
+h <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "GAT->T", small = F)
+i <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "ACC->A", small = F)
+j <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "GCT->T", small = F)
+k <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "GAC->T", small = F)
+l <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "TCG->T", small = F)
+m <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "ACG->T", small = F)
+n <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "GCG->T", small = F)
+o <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "ACA->T", small = F)
+
+grid.arrange(a,b,c,d,e,f,g,blank, h,i,j,k,l,m,n,o, ncol = 4)
+```
+
+**Supplementary Figure 3:** Approximate 95% confidence interval estimates of inferred mutation rate for each highly significantly variable 3-mer type across Africa (AFR), Europe (EUR), South Asia (SAS), and East Asia (EAS).
+
+
+***********************************************************************************************************
+
+\pagebreak
+
+```{r S4 functions}
+#box plot of rate by chrom for a particular sequence context
+chrom.box <- function(AFR, EUR, EAS, SAS, gw, mut){
+  #get data
+  chrom.dat <- chrom.process.data(AFR, EUR, EAS, SAS, gw, mut)
+  
+  n <- nchar(mut)
+  ref <- substr(mut, 1, n-3)
+  alt <- substr(mut, n, n)
+  
+  #find outliers
+  AFR.rates <- subset(chrom.dat, chrom.dat$pop == "AFR")
+  AFR.outliers <- subset(AFR.rates, is_outlier(AFR.rates$rate)==TRUE)
+  EUR.rates <- subset(chrom.dat, chrom.dat$pop == "EUR")
+  EUR.outliers <- subset(EUR.rates, is_outlier(EUR.rates$rate)==TRUE)
+  EAS.rates <- subset(chrom.dat, chrom.dat$pop == "EAS")
+  EAS.outliers <- subset(EAS.rates, is_outlier(EAS.rates$rate)==TRUE)
+  SAS.rates <- subset(chrom.dat, chrom.dat$pop == "SAS")
+  SAS.outliers <- subset(SAS.rates, is_outlier(SAS.rates$rate)==TRUE)
+  
+  #plot
+  c_plot <- ggplot(chrom.dat, aes(pop, rate))+
+    geom_boxplot(outlier.color = NA, fill = c("palegreen1",  "steelblue1", 'plum1', "lightcoral"))+
+    labs(x = "\nPopulation", title = bquote(.(ref)%->%.(alt) ~ "by chromosome"), y = NULL)+
+    scale_color_manual("", values = c("forest green", "dark blue", 'magenta', "red"))+
+    
+    #add outlier labels
+    geom_text(data = EUR.outliers, aes(pop, rate, label = chrom), color = "dark blue", nudge_x = 0.25, size = 2)+
+    geom_text(data = AFR.outliers, aes(pop, rate, label = chrom), color = "forest green", nudge_x = 0.25, size = 2)+
+    geom_text(data = EAS.outliers, aes(pop, rate, label = chrom), color = "red", nudge_x = 0.25, size = 2)+
+    geom_text(data = SAS.outliers, aes(pop, rate, label = chrom), color = "magenta", nudge_x = 0.25, size = 2)+
+    
+    #add points
+    geom_point(aes(color = factor(chrom.dat$pop)), size = .4, position = position_jitter(width = 0.1))+
+    theme(axis.text.x = element_text(size = rel(.7)), axis.title.x = element_blank(), #adjust text sizes
+          axis.title.y = element_text(size = rel(.7)), axis.text.y = element_text(size = rel(.7)),
+          legend.position = 'none',
+          title = element_text(size = rel(.5)))#legend position
+  return(c_plot)
+}
+
+#helper function for ploting which formats the data for ggplot
+chrom.process.data <- function(AFR, EUR, EAS, SAS, gw, mut){
+  #get indicies for mutation and contextAFR, EUR, EAS, SAS, gw, mut
+  i <- which(EUR$Context == mut)
+  cntxt <- substr(mut, 1, nchar(mut)-3)
+  i.cntxt <- which(gw$Context == cntxt)
+  col.e <- ncol(AFR)
+  col.s <- col.e-22
+  
+  #trim summary columns from each input dataframe
+  AFR <- AFR[c(col.s: col.e)]
+  EUR <- EUR[c(col.s: col.e)]
+  EAS <- EAS[c(col.s: col.e)]
+  SAS <- SAS[c(col.s: col.e)]
+  gw <- gw[-c(1,2)]
+  gw_totals <- colSums(gw)
+  
+  #make output dataframe for plot
+  dat <- data.frame(matrix(nrow = 23, ncol = 4))
+  colnames(dat) <- c("AFR", "EUR", "SAS", "EAS")  
+  
+  #get rates for each pop
+  dat$'EUR' <- t(EUR[i,]/gw[i.cntxt,]*1.2E-8*gw_totals/colSums(EUR))
+  dat$'AFR' <- t(AFR[i,]/gw[i.cntxt,]*1.2E-8*gw_totals/colSums(AFR))
+  dat$'EAS' <- t(EAS[i,]/gw[i.cntxt,]*1.2E-8*gw_totals/colSums(EAS))
+  dat$'SAS' <- t(SAS[i,]/gw[i.cntxt,]*1.2E-8*gw_totals/colSums(SAS))
+  
+  #melt data to necessary format
+  row.names(dat) <- c('1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', 'X')
+  dat.m <- melt(t(dat))
+  colnames(dat.m) <- c("pop", "chrom", "rate")
+  
+  return(dat.m)
+}
+
+#helper function that returns which elements of a vector x are outliers
+is_outlier <- function(x) {
+  return(x < quantile(x, 0.25) - 1.5 * IQR(x) | x > quantile(x, 0.75) + 1.5 * IQR(x))
+}
+```
+
+```{r S4 make figure, fig.height = 8, fig.width=7}
+a <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, gw_3mer_counts, "TCC->T")
+b <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, gw_3mer_counts, "ACC->T")
+c <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, gw_3mer_counts, "TCT->T")
+d <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, gw_3mer_counts, "CCC->T")
+e <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, gw_3mer_counts, "TCA->T")
+f <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, gw_3mer_counts, "ACT->T")
+g <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, gw_3mer_counts, "GCC->T")
+h <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, gw_3mer_counts, "GAT->T")
+i <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, gw_3mer_counts, "ACC->A")
+j <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, gw_3mer_counts, "GCT->T")
+k <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, gw_3mer_counts, "GAC->T")
+l <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, gw_3mer_counts, "TCG->T")
+m <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, gw_3mer_counts, "ACG->T")
+n <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, gw_3mer_counts, "GCG->T")
+o <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, gw_3mer_counts, "ACA->T")
+
+
+grid.arrange(a,b,c,d,e,f,g,blank,h,i,j,k,l,m,n,o, ncol = 4)
+```
+
+**Supplementary Figure 4:** Box plots of inferred private mutation rate across chromosomes for each highly significantly variable 3-mer type.  Outlier points are labeled with chromosome.
+
+
+***********************************************************************************************************
+
+\pagebreak
+
+```{r S567 upload data}
+AFR_7mer_counts <- read_delim("7mer/AFR_7mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+EUR_7mer_counts <- read_delim("7mer/EUR_7mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+EAS_7mer_counts <- read_delim("7mer/EAS_7mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+SAS_7mer_counts <- read_delim("7mer/SAS_7mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+gw_7mer_counts <- read_delim("gw_counts/gw_7mer_counts.txt", 
+                             "\t", escape_double = FALSE, trim_ws = TRUE)
+source("../R_code/data_wrangling/upload_subpops_7mer.R")
+```
+
+```{r S567 functions}
+# given: count1 and count2: pop-specific polymorphism dataframes; Mut: 3mer subcontext of interest,
+# generates a scatter plot of rate for mut in population 1 by population 2
+subrate.scplot <- function(count1, count2, mut, pops = c("Pop 1", "Pop 2"), label = c(), lm = F){
+  pop1.mut <- subset(count1, count1$X3mer == mut)
+  pop2.mut <- subset(count2, count2$X3mer == mut)
+  sample.size <- pop1.mut$Count + pop2.mut$Count
+  n <- nchar(mut)
+  ref <- substr(mut, 1, n-3)
+  alt <- substr(mut, n, n)
+  
+  #make plot
+  p_plot <- qplot(pop1.mut$Rate, pop2.mut$Rate) +
+    labs(x = bquote(.(ref)%->%.(alt) ~ .(paste("mutation rate in", pops[1]))), y = bquote(.(ref)%->%.(alt) ~ .(paste("mutation rate in", pops[2])))) +
+    theme(legend.title = element_blank(), 
+          legend.justification= c(1,0), 
+          legend.position=c(1,0),
+          legend.text = element_text(size = rel(0.7)),
+          legend.key.size = unit(.3, "cm"),
+          axis.text=element_text(size = 6),
+          text = element_text(size = 7))+
+    geom_point(aes(colour = log(base = 10, x = sample.size)), size = .7) + 
+    scale_colour_gradient(low = "orange", high = "blue")+
+    geom_abline(aes(intercept=0,slope=1), size = .5) + 
+    coord_fixed(ratio = 1, 
+                xlim = c(0, max(pop1.mut$Rate, pop2.mut$Rate)),
+                ylim = c(0, max(pop1.mut$Rate, pop2.mut$Rate)))
+  
+  if (lm){
+    mod1 <- lm(pop2.mut$Rate ~ pop1.mut$Rate)
+    pred <- predict(mod1, interval = "prediction")
+    
+    p_plot <- p_plot + stat_smooth(method = lm, se = FALSE, fullrange = T)+
+      geom_line(aes(y = pred[,2]), color = "red", linetype = "dashed", size = 1)+
+      geom_line(aes(y = pred[,3]), color = "red", linetype = "dashed", size = 1)
+  }
+  
+  if (length(label!=0)){
+    #set aside contexts to label
+    dat <- data.frame(cbind(pop1.mut$Context, pop1.mut$Rate, pop2.mut$Rate), stringsAsFactors = F)
+    lab <- subset(dat,  is.element(dat[,1], label))
+    
+    if (length(lab[,1]!=0)){
+      lab[,c(2,3)] <- sapply(lab[,c(2,3)], as.numeric)
+      p_plot <- p_plot + geom_label_repel(data = lab, aes(lab[,2], lab[,3],
+                                   label = lab[,1]), size = 2.5, box.padding = unit(1, "lines"),
+                                   point.padding = unit(.3, "lines"),
+                                   nudge_x = 1.5e-9, nudge_y = 1.5e-9, color = "purple4")
+    }
+  }
+
+  return(p_plot)
+}
+```
+
+```{r S5 make figure, fig.height = 7.5, fig.width=7}
+a <- subrate.scplot(EAS_7mer_counts, EUR_7mer_counts, "TCC->T", pops = c("East Asia", "Europe"))
+b <- subrate.scplot(EAS_7mer_counts, EUR_7mer_counts, "ACC->T", pops = c("East Asia", "Europe"))
+c <- subrate.scplot(EAS_7mer_counts, EUR_7mer_counts, "TCT->T", pops = c("East Asia", "Europe"))
+d <- subrate.scplot(EAS_7mer_counts, EUR_7mer_counts, "CCC->T", pops = c("East Asia", "Europe"))
+e <- subrate.scplot(EAS_7mer_counts, EUR_7mer_counts, "ACT->T", pops = c("East Asia", "Europe"))
+f <- subrate.scplot(EAS_7mer_counts, EUR_7mer_counts, "TCA->T", pops = c("East Asia", "Europe"))
+g <- subrate.scplot(EAS_7mer_counts, EUR_7mer_counts, "GCC->T", pops = c("East Asia", "Europe"))
+grid.arrange(a,b,c,d,e,f,g, ncol = 3)
+```
+
+**Supplementary Figure 5:** Rates of all 7-mer expansions of each profile #1 signature in Europe versus East Asia. Each point represents a 7-mer expansion of the 3-mer subtype shown, plotted based on its estimated mutation rate in each of the two populations displayed. Colors indicate the log (base 10) of the number of substitutions observed for that 7-mer class.  Europe and East Asia were selected to visualize this comparison because the difference in mutation rate for profile #1 3-mers is most strong and consistent between these populations. Generally, these polymorphisms match case II (see main text): enrichment is consistent across 7mers, with some expected amount of noise.
+
+***********************************************************************************************************
+
+\pagebreak
+
+```{r S6 make figure, fig.height = 7.5, fig.width=7}
+a <- subrate.scplot(AFR_7mer_counts, EAS_7mer_counts, "GAT->T", pops = c("Africa", "East Asia"))
+b <- subrate.scplot(AFR_7mer_counts, EAS_7mer_counts, "ACC->A", pops = c("Africa", "East Asia"))
+c <- subrate.scplot(AFR_7mer_counts, EAS_7mer_counts, "GAC->T", pops = c("Africa", "East Asia"))
+grid.arrange(a,b,c, ncol = 2)
+```
+
+**Supplementary Figure 6:** Rates of all 7-mer expansions of each profile #2 signature in Africa versus East Asia. Again, the population-specific enrichment is consistent across 7mers, consistent with case II.
+
+***********************************************************************************************************
+
+\pagebreak
+
+```{r S7 make figure, fig.height = 7.5, fig.width=7}
+a <- subrate.scplot(AFR_7mer_counts, SAS_7mer_counts, "TCG->T", pops = c("Africa", "South Asia"))
+b <- subrate.scplot(AFR_7mer_counts, SAS_7mer_counts, "ACG->T", pops = c("Africa", "South Asia"))
+c <- subrate.scplot(AFR_7mer_counts, SAS_7mer_counts, "GCG->T", pops = c("Africa", "South Asia"))
+d <- subrate.scplot(AFR_7mer_counts, SAS_7mer_counts, "CCG->T", pops = c("Africa", "South Asia"))
+grid.arrange(a,b,c, d, ncol = 2)
+```
+
+**Supplementary Figure 7:** Rates of all 7-mer expansions of each profile #4 signature in Africa versus South Asia. The relative mutation rate variability between the CpG mutations is small compared to other profiles noted in this report. However, we still observe that most 7-mer expansions of these CpG substitutions lie above the diagonal, consistent with case II.
+
+***********************************************************************************************************
+
+\pagebreak
+
+```{r S8 functions}
+# calculates homogeneity test p values for pairwise comparisons of two dfs of counts
+pairwise.chi <- function(counts.1, counts.2, filter = T){
+  n.contexts = length(counts.1$Context)
+  result <- data.frame(matrix(ncol=2,nrow=n.contexts))
+  colnames(result) <- c("Context", "p")
+  
+  result$Context <- counts.1$Context
+  sum.1 <- sum(counts.1$Count)
+  sum.2 <- sum(counts.2$Count)
+
+  for (i in 1:n.contexts){
+    c.a <- c(counts.1$Count[i], counts.2$Count[i])
+    c.b <- c(sum.1, sum.2) - c.a
+    data <- cbind(c.a, c.b)
+    warning <- is(tryCatch(chisq.test(data), warning = function(w) w), "warning")
+    if (filter == T & warning){
+      result$p[i] <- NA
+    }
+    else result$p[i] <- chisq.test(data)$p.value
+  }
+  
+  return(result)
+}
+```
+
+
+```{r S8 make figure, fig.height = 7.5, fig.width=7}
+p.CDXJPT <- pairwise.chi(CDX_EAS_7mer_counts, JPT_EAS_7mer_counts)
+p.CDXJPT <- subset(p.CDXJPT, is.element(CDX_EAS_7mer_counts$X3mer, c("AAC->C", "CAC->C", "TAT->T", "GAC->C", "TAC->C")))
+p.CDXJPT$fdr <- p.adjust(p.CDXJPT$p, method = "fdr")
+
+JPT7mers <- subset(p.CDXJPT$Context, p.CDXJPT$fdr < 0.05)
+
+a <- subrate.scplot(CDX_EAS_7mer_counts, JPT_EAS_7mer_counts, "AAC->C", pops = c("Chinese Dai", "Japanese"), label = JPT7mers)
+b <- subrate.scplot(CDX_EAS_7mer_counts, JPT_EAS_7mer_counts, "CAC->C", pops = c("Chinese Dai", "Japanese"), label = JPT7mers)
+c <- subrate.scplot(CDX_EAS_7mer_counts, JPT_EAS_7mer_counts, "GAC->C", pops = c("Chinese Dai", "Japanese"), label = JPT7mers)
+d <- subrate.scplot(CDX_EAS_7mer_counts, JPT_EAS_7mer_counts, "TAC->C", pops = c("Chinese Dai", "Japanese"), label = JPT7mers)
+e <- subrate.scplot(CDX_EAS_7mer_counts, JPT_EAS_7mer_counts, "TAT->T", pops = c("Chinese Dai", "Japanese"), label = JPT7mers)
+grid.arrange(a,b,c,d,e, ncol = 2)
+```
+
+**Supplementary Figure 8:** Rates of all 7-mer expansions of each profile #3 signature in Japanese versus Chinese Dai. Labeled points are those which were significantly variable between Japanese and Chinese Dai (fdr < 0.05 among all profile #3 7-mer expansions).
+
+***********************************************************************************************************
+
+\pagebreak 
+
+```{r S9 functions}
+CI.plot.subpop <- function(subpops, mut, popnames, colors = colors.ancestral){
+  n <- nchar(mut)
+  ref <- substr(mut, 1, n-3)
+  alt <- substr(mut, n, n)
+  n.pops <- length(subpops)
+  mut.i <- which(subpops[[1]]$Context == mut)
+  
+  #have to do a silly workaround or R will sort popnames alphanumerically
+  poplabs <- factor(popnames, levels= popnames)
+  
+  #cycle through subpops and get counts for mut
+  counts <- rep(0, n.pops)
+  sums <- rep(0, n.pops)
+  for (i in 1:n.pops){
+    counts[i] <- subpops[[i]]$Count[mut.i]
+    sums[i]<- sum(subpops[[i]]$Count)
+  }
+  
+  #estimate substitution probability
+  N.c <- subpops[[1]]$context_in_genome[mut.i] 
+  theta <- counts/N.c
+  L <- theta - 1.96*sqrt(theta*(1-theta)/N.c)
+  U <- theta + 1.96*sqrt(theta*(1-theta)/N.c)
+  
+  #normalize to rate estimate; assume genome wide subsitution probability is measured without error
+  norm <- 1.2E-8*(sum(as.numeric(subpops[[1]]$context_in_genome))/3)/sums
+  
+  
+  df <- data.frame(cbind(poplabs, theta*norm, L*norm, U*norm))
+  plotcol <- reorder(colors, theta*norm)
+  
+  ggplot(df, aes(reorder(popnames, poplabs), theta*norm)) +
+    geom_point(size = 4, color = plotcol) +
+    geom_errorbar(aes(ymax = U*norm, ymin = L*norm), color = plotcol, size = 0.75)+
+    labs(y = bquote("Estimated mutation rate of" ~ .(ref)%->%.(alt))) + #y axis label
+    theme(axis.text.x = element_text(size = rel(1), angle = 45, hjust = 1), axis.title.x = element_blank(), #adjust text sizes
+          axis.title.y = element_text(size = rel(1)), axis.text.y = element_text(size = rel(.9)),
+          legend.position = 'none')
+}
+```
+
+```{r}
+EASsubpops <- list(CDX_EAS_7mer_counts, KHV_EAS_7mer_counts, CHS_EAS_7mer_counts, CHB_EAS_7mer_counts, JPT_EAS_7mer_counts)
+EASpopnames <- c("CDX", "KHV", "CHS", "CHB", "JPT")
+CI.plot.subpop(EASsubpops, "AAACAAA->A", EASpopnames, rep("red", 5))
+```
+
+**Supplementary Figure 9:** Approximate 95% confidence interval estimates of inferred mutation rate for AAACAAA$\rightarrow$A across East Asian subpopulations: Chinese Dai in Xishuangbanna (CDX); Kinh in Ho Chi Minh City, Vietnam (KHV); Southern Han Chinese (CHS); Han Chinese in Beijing (CHB); and Japanese in Tokyo.  This pattern resembles that of 3-mer profile #3.
+
+***********************************************************************************************************
+
+\pagebreak 
+
+```{r S10 upload data}
+afrDAFprof1 = read.table("DAF_spectra/AFR_DAFbin_enrichment_profile1_fewerContexts.txt",header=T) %>% tbl_df()
+easDAFprof1 = read.table("DAF_spectra/EAS_DAFbin_enrichment_profile1_fewerContexts.txt",header=T) %>% tbl_df()
+eurDAFprof1 = read.table("DAF_spectra/EUR_DAFbin_enrichment_profile1_fewerContexts.txt",header=T) %>% tbl_df()
+sasDAFprof1 = read.table("DAF_spectra/SAS_DAFbin_enrichment_profile1_fewerContexts.txt",header=T) %>% tbl_df()
+```
+
+```{r DAF plot function}
+#generate DAF plots by passing tbl to function
+daf.plot = function(contData,palette,legendX,legendY,legendCols,figLetter) {
+	plot = ggplot(contData) + geom_line(aes(x=minAF,y=relEnrich,color=X3mer),size=1) + geom_point(aes(x=minAF,y=relEnrich,color=X3mer),size=1.1) + xlab("DAF bin (log10 scale)") + ylab("Enrichment") + theme(axis.text.x=element_text(size=rel(0.7),face="bold",color="black",angle=45,hjust=1), axis.text.y=element_text(size=rel(0.7),face="bold",color="black"), axis.title.x=element_text(size=rel(0.7),face="bold",color="black"), axis.title.y=element_text(size=rel(0.7),face="bold",color="black"),legend.title=element_text(size=rel(0.7),face="bold"),legend.text=element_text(size=rel(0.4),face="bold"),legend.position=c(legendX,legendY)) + labs(color="Polymorphism") + scale_x_log10(breaks=unique(contData$minAF),labels=paste(format(unique(contData$minAF),digits=3,scientific=T))) + scale_color_manual(values=palette) + guides(color=guide_legend(ncol=legendCols)) + ggtitle(figLetter)
+	return(plot)
+}
+```
+
+```{r S10 make figure}
+pal1 = c('#a6cee3','#1f78b4','#b2df8a','#33a02c','#fb9a99','#e31a1c','#fdbf6f')
+p1.afr = daf.plot(afrDAFprof1,pal1,0.2,0.3,3,"A")
+p1.eas = daf.plot(easDAFprof1,pal1,0.2,0.3,3,"B")
+p1.eur = daf.plot(eurDAFprof1,pal1,0.2,0.75,3,"C")
+p1.sas = daf.plot(sasDAFprof1,pal1,0.2,0.3,3,"D")
+grid.arrange(p1.afr,p1.eas,p1.eur,p1.sas,ncol=2)
+
+```
+
+**Supplementary Figure 10:** DAF enrichment for profile #1 in (A) Africa, (B) East Asia, (C) Europe, (D) South Asia.
+
+
+\pagebreak
+
+```{r S11 upload data}
+afrDAFprof2 = read.table("DAF_spectra/AFR_DAFbin_enrichment_profile2.txt",header=T) %>% tbl_df()
+easDAFprof2 = read.table("DAF_spectra/EAS_DAFbin_enrichment_profile2.txt",header=T) %>% tbl_df()
+eurDAFprof2 = read.table("DAF_spectra/EUR_DAFbin_enrichment_profile2.txt",header=T) %>% tbl_df()
+sasDAFprof2 = read.table("DAF_spectra/SAS_DAFbin_enrichment_profile2.txt",header=T) %>% tbl_df()
+```
+
+
+```{r S11 make figure}
+pal2 = c("#3B9AB2","#EBCC2A","#F21A00")
+p2.afr = daf.plot(afrDAFprof2,pal2,0.2,0.3,1,"A")
+p2.eas = daf.plot(easDAFprof2,pal2,0.2,0.3,1,"B")
+p2.eur = daf.plot(eurDAFprof2,pal2,0.2,0.3,1,"C")
+p2.sas = daf.plot(sasDAFprof2,pal2,0.2,0.3,1,"D")
+grid.arrange(p2.afr,p2.eas,p2.eur,p2.sas,ncol=2)
+
+```
+
+**Supplementary Figure 11:** DAF enrichment for profile #2 in (A) Africa, (B) East Asia, (C) Europe, (D) South Asia.
+
+\pagebreak
+
+```{r S12 upload data}
+jpt = read.table("DAF_spectra/JPT_DAFbin_enrichment_profile3.txt",header=T) %>% tbl_df()
+cdx = read.table("DAF_spectra/CDX_DAFbin_enrichment_profile3.txt",header=T) %>% tbl_df()
+chb = read.table("DAF_spectra/CHB_DAFbin_enrichment_profile3.txt",header=T) %>% tbl_df()
+chs = read.table("DAF_spectra/CHS_DAFbin_enrichment_profile3.txt",header=T) %>% tbl_df()
+khv = read.table("DAF_spectra/KHV_DAFbin_enrichment_profile3.txt",header=T) %>% tbl_df()
+```
+
+
+```{r S12 make figure, fig.height=10}
+pal3 = c('#a6cee3','#1f78b4','#b2df8a','#33a02c','#fb9a99')
+p3.cdx = daf.plot(cdx,pal3,0.2,0.75,2,"A")
+p3.chb = daf.plot(chb,pal3,0.2,0.75,2,"B")
+p3.chs = daf.plot(chs,pal3,0.2,0.75,2,"C")
+p3.jpt = daf.plot(jpt,pal3,0.2,0.75,2,"D")
+p3.khv = daf.plot(khv,pal3,0.2,0.75,2,"E")
+grid.arrange(p3.cdx,p3.chb,p3.chs,p3.jpt,p3.khv,ncol=2,heights=rep(10,5))
+
+```
+
+**Supplementary Figure 12:** DAF enrichment for 3-mers in profile #3 in (A) CDX, (B) CHB, (C) CHS, (D) JPT, (E) KHV.
+
+
+\pagebreak
+
+```{r S13 upload data}
+afrDAFprof4 = read.table("DAF_spectra/AFR_DAFbin_enrichment_profile4.txt",header=T) %>% tbl_df()
+easDAFprof4 = read.table("DAF_spectra/EAS_DAFbin_enrichment_profile4.txt",header=T) %>% tbl_df()
+eurDAFprof4 = read.table("DAF_spectra/EUR_DAFbin_enrichment_profile4.txt",header=T) %>% tbl_df()
+sasDAFprof4 = read.table("DAF_spectra/SAS_DAFbin_enrichment_profile4.txt",header=T) %>% tbl_df()
+```
+
+
+```{r S13 make figure}
+pal4 = c('#1b9e77','#d95f02','#7570b3','#e7298a')
+p4.afr = daf.plot(afrDAFprof4,pal4,0.2,0.6,1,"A")
+p4.eas = daf.plot(easDAFprof4,pal4,0.2,0.6,1,"B")
+p4.eur = daf.plot(eurDAFprof4,pal4,0.2,0.6,1,"C")
+p4.sas = daf.plot(sasDAFprof4,pal4,0.2,0.6,1,"D")
+grid.arrange(p4.afr,p4.eas,p4.eur,p4.sas,ncol=2)
+
+```
+
+**Supplementary Figure 13:** DAF enrichment for profile #4 in (A) Africa, (B) East Asia, (C) Europe, (D) South Asia.
+
+\pagebreak
+
+```{r S14 upload data}
+afrDAFprof5 = read.table("DAF_spectra/AFR_DAFbin_enrichment_profile5.txt",header=T) %>% tbl_df()
+easDAFprof5 = read.table("DAF_spectra/EAS_DAFbin_enrichment_profile5.txt",header=T) %>% tbl_df()
+eurDAFprof5 = read.table("DAF_spectra/EUR_DAFbin_enrichment_profile5.txt",header=T) %>% tbl_df()
+sasDAFprof5 = read.table("DAF_spectra/SAS_DAFbin_enrichment_profile5.txt",header=T) %>% tbl_df()
+```
+
+```{r DAF plot function for 7mers}
+#generate DAF plots by passing tbl to function
+daf.plot.7mer = function(contData,palette,legendX,legendY,legendCols,figLetter) {
+	plot = ggplot(contData) + geom_line(aes(x=minAF,y=relEnrich,color=X7mer),size=1) + geom_point(aes(x=minAF,y=relEnrich,color=X7mer),size=1.1) + xlab("DAF bin (log10 scale)") + ylab("Enrichment") + theme(axis.text.x=element_text(size=rel(0.7),face="bold",color="black",angle=45,hjust=1), axis.text.y=element_text(size=rel(0.7),face="bold",color="black"), axis.title.x=element_text(size=rel(0.7),face="bold",color="black"), axis.title.y=element_text(size=rel(0.7),face="bold",color="black"),legend.title=element_text(size=rel(0.7),face="bold"),legend.text=element_text(size=rel(0.4),face="bold"),legend.position=c(legendX,legendY)) + labs(color="Polymorphism") + scale_x_log10(breaks=unique(contData$minAF),labels=paste(format(unique(contData$minAF),digits=3,scientific=T))) + scale_color_manual(values=palette) + guides(color=guide_legend(ncol=legendCols)) + ggtitle(figLetter)
+	return(plot)
+}
+```
+
+```{r S14 make figure, fig.height=5}
+pal5 = pal2
+p5.afr = daf.plot.7mer(afrDAFprof5,pal5,0.2,0.6,1,"A")
+p5.eas = daf.plot.7mer(easDAFprof5,pal5,0.2,0.6,1,"B")
+p5.eur = daf.plot.7mer(eurDAFprof5,pal5,0.2,0.6,1,"C")
+p5.sas = daf.plot.7mer(sasDAFprof5,pal5,0.2,0.6,1,"D")
+grid.arrange(p5.afr,p5.eas,p5.eur,p5.sas,ncol=2)
+
+```
+
+**Supplementary Figure 14:** DAF enrichment for 7-mers enriched in Africa in (A) Africa, (B) East Asia, (C) Europe, (D) South Asia.
+
+\pagebreak
+
+```{r S table 123 data}
+AFR_5mer_counts <- read.delim('5mer/AFR_5mer_counts.txt')
+EUR_5mer_counts <- read.delim('5mer/EUR_5mer_counts.txt')
+EAS_5mer_counts <- read.delim('5mer/EAS_5mer_counts.txt')
+SAS_5mer_counts <- read.delim('5mer/SAS_5mer_counts.txt')
+```
+
+```{r S table 123 functions}
+# calculates homogeneity test p values for Fourway comparisons of counts dfs
+fourway.chi <- function(AFR, EUR, EAS, SAS, filter = T){
+  n.contexts = length(AFR$Context)
+  
+  # make dataframe for results
+  result <- data.frame(matrix(ncol=9,nrow=n.contexts))
+  colnames(result) <- c("Context", "X5mer","X3mer", "X1mer", 
+                        "AFR.Count", "EUR.Count", "EAS.Count", "SAS.Count", "p")
+  result$Context <- AFR$Context
+  result$X5mer <- AFR$X5mer # for smaller contexts, X3mer and X5mer columns do not exist,
+  result$X3mer <- AFR$X3mer # and will disappear at this step
+  result$X1mer <- AFR$X1mer 
+  result$AFR.Count <- AFR$Count; result$EUR.Count <- EUR$Count
+  result$EAS.Count <- EAS$Count; result$SAS.Count <- SAS$Count
+  
+  # start setting up tables
+  sums <- c(sum(AFR$Count), sum(EUR$Count), sum(EAS$Count), sum(SAS$Count))
+  
+  # set up table and run test for each context
+  for (i in 1:n.contexts){
+    c.a <- c(AFR$Count[i], EUR$Count[i], EAS$Count[i], SAS$Count[i])
+    c.b <- sums - c.a
+    data <- cbind(c.a, c.b)
+    warning <- is(tryCatch(chisq.test(data), warning = function(w) w), "warning")
+    if (filter == T & warning){
+      result$p[i] <- NA}
+    else result$p[i] <- chisq.test(data)$p.value
+    }
+  return(result)
+}
+ordered.p <- function(pdata){
+  #preprocess data to order and remove nas 
+  pdata <- pdata[complete.cases(pdata$p),]
+  myorder <- order(pdata$p)
+  n.muts <- length(pdata$p)
+  
+  p.ordered <- rep(0, n.muts)
+  
+  #set largest p-value 
+  j <- myorder[n.muts]
+  p.ordered[j] <- pdata$p[j]
+  
+  #initialize not mutated counts based on this lowest p-value mutation
+  not.mut <- c(pdata$AFR.Count[j], pdata$EUR.Count[j], 
+               pdata$EAS.Count[j], pdata$SAS.Count[j])
+  
+  for (i in n.muts:1){
+    j <- myorder[i]
+    mut <-c(pdata$AFR.Count[j], pdata$EUR.Count[j], 
+            pdata$EAS.Count[j], pdata$SAS.Count[j])
+    data <- cbind(mut, not.mut)
+    p.ordered[j] <- chisq.test(data)$p.value
+    
+    #add these mutations to the not.mutated counts for future tests
+    not.mut <- not.mut + mut
+  }
+  pdata$p <- NULL
+  pdata$p_ordered <- p.ordered
+  return(pdata)
+}
+```
+
+
+```{r S table 1 make}
+setwd("../workflows_finished/supplement")
+# calculate ordered p values
+p.3mer <- fourway.chi(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts)
+o.p.3mer <- ordered.p(p.3mer)
+o.p.3mer <- o.p.3mer[order(o.p.3mer$p_ordered),]
+o.sig.3mers <- subset(o.p.3mer, o.p.3mer$p_ordered < 0.05/96)
+colnames(o.sig.3mers) <- c("Context", "1-mer", "Counts in AFR", "Counts in EUR", "Counts in EAS", "Counts in SAS", "p Ordered")
+
+# merge in gw_counts, reorder and rename cols
+o.sig.3mers <- merge(o.sig.3mers, AFR_3mer_counts[,c(1,5)], 
+                     by = "Context", all.x = TRUE, sort = F)
+colnames(o.sig.3mers) <- c("Context", "1-mer", "Counts in AFR", "Counts in EUR", "Counts in EAS", "Counts in SAS", "p Ordered", "Total Contexts in Genome")
+o.sig.3mers <- o.sig.3mers[,c(1:6, 8, 7)]
+
+# save
+write.table(o.sig.3mers, "supplemetary_table_1A.csv", quote = F, sep = ",", row.names = F)
+```
+
+```{r table S2 make}
+setwd("../workflows_finished/supplement")
+# calculate ordered p values
+p.5mer <- fourway.chi(AFR_5mer_counts, EUR_5mer_counts, EAS_5mer_counts, SAS_5mer_counts)
+o.p.5mer <- ordered.p(p.5mer)
+o.p.5mer <- o.p.5mer[order(o.p.5mer$p_ordered),]
+o.sig.5mers <- subset(o.p.5mer, o.p.5mer$p_ordered < 0.05/(dim(o.p.5mer)[1]))
+
+# merge in gw_counts, reorder and rename cols
+o.sig.5mers <- merge(o.sig.5mers, AFR_5mer_counts[,c(1,6)], 
+                     by = "Context", all.x = TRUE, sort = F)
+colnames(o.sig.5mers) <- c("Context", "3-mer", "1-mer", "Counts in AFR", "Counts in EUR", "Counts in EAS", "Counts in SAS", "p Ordered", "Total Contexts in Genome")
+o.sig.5mers <- o.sig.5mers[,c(1:7, 9, 8)]
+
+# save
+write.table(o.sig.5mers, "supplemetary_table_1B.csv", quote = F, sep = ",", row.names = F)
+```
+
+```{r table S3 make}
+setwd("../workflows_finished/supplement")
+# calculate ordered p values
+p.7mer <- fourway.chi(AFR_7mer_counts, EUR_7mer_counts, EAS_7mer_counts, SAS_7mer_counts)
+o.p.7mer <- ordered.p(p.7mer)
+o.p.7mer <- o.p.7mer[order(o.p.7mer$p_ordered),]
+o.sig.7mers <- subset(o.p.7mer, o.p.7mer$p_ordered < 0.05/(dim(o.p.7mer)[1]))
+
+
+# merge in gw_counts, reorder and rename cols
+o.sig.7mers <- merge(o.sig.7mers, AFR_7mer_counts[,c(1,7)], 
+                     by = "Context", all.x = TRUE, sort = F)
+colnames(o.sig.7mers) <- c("Context", "5-mer", "3-mer", "1-mer", "Counts in AFR", "Counts in EUR", "Counts in EAS", "Counts in SAS", "p Ordered", "Total Contexts in Genome")
+o.sig.7mers <- o.sig.7mers[,c(1:8, 10, 9)]
+
+# save
+write.table(o.sig.7mers, "supplemetary_table_1C.csv", quote = F, sep = ",", row.names = F)
+```
