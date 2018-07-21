@@ -749,7 +749,7 @@ plotcol <- reorder(colors, theta*norm)
 b <- ggplot(df, aes(reorder(popnames, c(1,2,3,4)), theta*norm)) +
   geom_point(size = 3, color = plotcol) +
   geom_errorbar(aes(ymax = U*norm, ymin = L*norm), color = plotcol, size =.75)+
-  labs(y =  bquote(paste("Mutation rate of")~.("TTTAAAA")%->%.("T")~paste("and")~.("TTTAAAA")%->%.("T"))) + #y axis label
+  labs(y =  bquote(paste("Mutation rate of")~.("TTTAAAA")%->%.("T")~paste("and")~.("ATTAAAA")%->%.("T"))) + #y axis label
   theme(axis.text.x = element_text(size = rel(.9)), axis.title.x = element_blank(), #adjust text sizes
         axis.title.y = element_text(size = rel(1)), axis.text.y = element_text(size = rel(1), angle = 0, hjust = 0.5), title = element_text(size = rel(.7)),
         legend.position = 'none')
