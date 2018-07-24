@@ -545,7 +545,7 @@ daf.plot = function(contData,palette,legendX,legendY,legendCols,figLetter) {
 }
 ```
 
-```{r S9 make figure}
+```{r S9 make figure, fig.height=6, fig.width=10}
 pal1 = c('#a6cee3','#1f78b4','#b2df8a','#33a02c','#fb9a99','#e31a1c','#fdbf6f')
 p1.afr = daf.plot(afrDAFprof1,pal1,0.2,0.3,3,"A")
 p1.eas = daf.plot(easDAFprof1,pal1,0.2,0.3,3,"B")
@@ -568,7 +568,7 @@ sasDAFprof2 = read.table("DAF_spectra/SAS_DAFbin_enrichment_profile2.txt",header
 ```
 
 
-```{r S10 make figure}
+```{r S10 make figure, fig.height=6, fig.width=10}
 pal2 = c("#3B9AB2","#EBCC2A","#F21A00")
 p2.afr = daf.plot(afrDAFprof2,pal2,0.2,0.3,1,"A")
 p2.eas = daf.plot(easDAFprof2,pal2,0.2,0.3,1,"B")
@@ -591,11 +591,11 @@ khv = read.table("DAF_spectra/KHV_DAFbin_enrichment_profile3.txt",header=T) %>% 
 ```
 
 
-```{r S11 make figure, fig.height=10}
+```{r S11 make figure, fig.height=16, fig.width=10}
 pal3 = c('#a6cee3','#1f78b4','#b2df8a','#33a02c','#fb9a99')
 p3.cdx = daf.plot(cdx,pal3,0.2,0.75,2,"A")
-p3.chb = daf.plot(chb,pal3,0.2,0.75,2,"B")
-p3.chs = daf.plot(chs,pal3,0.2,0.75,2,"C")
+p3.chb = daf.plot(chb,pal3,0.2,0.25,2,"B")
+p3.chs = daf.plot(chs,pal3,0.2,0.25,2,"C")
 p3.jpt = daf.plot(jpt,pal3,0.2,0.75,2,"D")
 p3.khv = daf.plot(khv,pal3,0.2,0.75,2,"E")
 grid.arrange(p3.cdx,p3.chb,p3.chs,p3.jpt,p3.khv,ncol=2,heights=rep(10,5))
@@ -615,7 +615,7 @@ sasDAFprof4 = read.table("DAF_spectra/SAS_DAFbin_enrichment_profile4.txt",header
 ```
 
 
-```{r S12 make figure}
+```{r S12 make figure, fig.height=6, fig.width=10}
 pal4 = c('#1b9e77','#d95f02','#7570b3','#e7298a')
 p4.afr = daf.plot(afrDAFprof4,pal4,0.2,0.6,1,"A")
 p4.eas = daf.plot(easDAFprof4,pal4,0.2,0.6,1,"B")
@@ -644,7 +644,7 @@ daf.plot.7mer = function(contData,palette,legendX,legendY,legendCols,figLetter) 
 }
 ```
 
-```{r S13 make figure, fig.height=5}
+```{r S13 make figure, fig.height=6, fig.width=10}
 pal5 = pal2
 p5.afr = daf.plot.7mer(afrDAFprof5,pal5,0.2,0.6,1,"A")
 p5.eas = daf.plot.7mer(easDAFprof5,pal5,0.2,0.6,1,"B")
