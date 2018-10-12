@@ -4,6 +4,6 @@
 
 for i in {1..22}; do
 
-	fgrep -w chr${i} nc_regions.bed > nc_chr${i}_regions.bed;
+	fgrep -w chr${i} nc_regions_for_vcftools.bed > nc_chr${i}_regions_for_vcftools.bed;
 
 done
