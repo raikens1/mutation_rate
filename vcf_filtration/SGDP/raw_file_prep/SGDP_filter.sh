@@ -25,13 +25,20 @@ fi
 FILENAME=$(basename -- "${1}")
 HANDLE="${FILENAME%%.*}"
 
-for i in {1..1}; do
+for i in {1..22}; do
 
     JOB_NAME="filter_chr${i}_${HANDLE}"
     echo "${JOB_NAME}"
-    cmd="vcftools --gzvcf ${1} --bed ../../nc_bedfiles/nc_regions_for_vcftools.bed --chr ${i} --remove-indels --min-alleles 2 --max-alleles 2 --remove-filtered-all --recode --stdout | bgzip -c > chr_${i}_${HANDLE}.vcf.gz"
+    cmd="module load bcftools; bcftools view -R ../../nc_bedfiles/nc_chr${i}_regions_for_vcftools.bed  -V indels -m 2 -M 2 -Oz -o  chr_${i}_${HANDLE}.vcf.gz ${1}; tabix -p vcf chr_${i}_${HANDLE}.vcf.gz"
     echo "${cmd}"
 
     bsub -q voight_normal -o "${JOB_NAME}".out -e "${JOB_NAME}".err "${cmd}"
 
 done
+
+JOB_NAME="filter_chrX_${HANDLE}"
+echo "${JOB_NAME}"
+cmd="module load bcftools; bcftools view -R ../../nc_bedfiles/nc_chrX_regions_for_vcftools.bed  -V indels -m 2 -M 2 -Oz -o  chr_X_${HANDLE}.vcf.gz ${1}; tabix -p vcf chr_X_${HANDLE}.vcf.gz"
+echo "${cmd}"
+
+bsub -q voight_normal -o "${JOB_NAME}".out -e "${JOB_NAME}".err "${cmd}"
