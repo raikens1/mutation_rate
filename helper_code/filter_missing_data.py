@@ -16,17 +16,16 @@ USEAGE: python filter_missing_data.py INPUT.vcf.gz
 """
 
 # TODO:
-# - [ ] implement basic functionality
+# - [ ] implement check for sufficient_data
 # - [ ] better naming for output file
-# - [ ] test
+# - [ ] implement shell call to tabix output file
 
+"""
+Generate an output vcf.gz which is identical to the input vcf.gz with any rows
+with more than 20% missing data removed
+"""
 def main():
-    # open output file in write mode
-    # with input file in read mode:
-    #   rewrite header to new file
-    #   parse GT information from row
-    #   if >=20% of GTs present, print line to new file
-    min_data = 0.2
+    min_data = 0.8
     infile = argv[1]
     outfile = "outfile.vcf.gz"# infile[:-3] + "_" + self.mutsfile.split(".")[0]
 
@@ -38,16 +37,37 @@ def main():
 	for line in f:
 	    if line.startswith('#'):
                 o.write(line)
-            else:
+        else:
 		row = line.split("\t")
-		if sufficient_data(row, min_data):
+		if sufficient_data(parse_row(row), min_data):
 		    o.write(line)
 
     o.close()
     # bonus points: tabix new file.
 
-def sufficient_data(row, min_data):
-    return False
+"""
+Given a list of alleles, return true if a sufficient amount of data is present
+input: GT_list (list), a list of alleles at a locus
+input: min_data (float), the percent of data which must be non-missing
+input: missing_char (str), character representing missing data
+output: (boolean): true if >= min_data % of alleles are not missing
+"""
+def sufficient_data(GT_list, min_data, missing_char = "."):
+    print GT_list
+    percent_present = 1 - GT_list.count(missing_char)/len(GT_list)
+    print percent_present
+    return (percent_present >= min_data)
+
+"""
+Parses a vcf line into a list of alleles
+input: row (list), elements in a line of a vcf (split by \t characters)
+output: (list) a list of the alleles of all individuals in the vcf
+"""
+def parse_row(row):
+    GT_cols = row[9:] #
+    GTs = [col[:3] for col in GT_cols] # extract just GT
+    allele_lists = [s.split("/") for s in GTs] # separate GTs into lists of alleles
+    return [item for sublist in allele_lists for item in sublist]
 
 
 if __name__ == '__main__':
