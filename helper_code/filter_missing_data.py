@@ -29,7 +29,7 @@ def main():
     infile = argv[1]
     outfile = "outfile.vcf.gz"# infile[:-3] + "_" + self.mutsfile.split(".")[0]
 
-    print "Copying variants with <=%d percent missing data from %s to %s" % (min_data*100, infile, outfile)
+    print "Copying variants with >=%d percent non-missing data from %s to %s" % (min_data*100, infile, outfile)
 
     o = gzip.open(outfile, "a")
 
@@ -37,7 +37,7 @@ def main():
 	for line in f:
 	    if line.startswith('#'):
                 o.write(line)
-        else:
+            else:
 		row = line.split("\t")
 		if sufficient_data(parse_row(row), min_data):
 		    o.write(line)
@@ -54,7 +54,7 @@ output: (boolean): true if >= min_data % of alleles are not missing
 """
 def sufficient_data(GT_list, min_data, missing_char = "."):
     print GT_list
-    percent_present = 1 - GT_list.count(missing_char)/len(GT_list)
+    percent_present = 1 - GT_list.count(missing_char)/float(len(GT_list))
     print percent_present
     return (percent_present >= min_data)
 
