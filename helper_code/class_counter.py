@@ -16,6 +16,7 @@ Writes a file of the counts of polymorphisms for each context
 # - [ ] add functionality that lets you choose to go faster with chromosome knowledge
 # - [ ] add read-in from reference file instead of initializing from permutations
 # - [ ] get rid of One_mer column
+# - [ ] handle when more information than GT is provided in GT column
 
 """
 	Counter Object:
