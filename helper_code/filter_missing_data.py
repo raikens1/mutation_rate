@@ -28,22 +28,22 @@ def main():
     #   if >=20% of GTs present, print line to new file
     min_data = 0.2
     infile = argv[1]
-	outfile = "outfile.vcf.gz"# infile[:-3] + "_" + self.mutsfile.split(".")[0]
+    outfile = "outfile.vcf.gz"# infile[:-3] + "_" + self.mutsfile.split(".")[0]
 
-	print "Copying variants with <=%d\% missing data from %s to %s" % (min_data*100, infile, outfile)
+    print "Copying variants with <=%d percent missing data from %s to %s" % (min_data*100, infile, outfile)
 
     o = gzip.open(outfile, "a")
 
-	with gzip.open(infile) as f:
-		for line in f:
-			if line.startswith('#'):
+    with gzip.open(infile) as f:
+	for line in f:
+	    if line.startswith('#'):
                 o.write(line)
             else:
-				row = line.split("\t")
-				if sufficient_data(row, min_data):
-					o.write(line)
+		row = line.split("\t")
+		if sufficient_data(row, min_data):
+		    o.write(line)
 
-		o.close()
+    o.close()
     # bonus points: tabix new file.
 
 def sufficient_data(row, min_data):
