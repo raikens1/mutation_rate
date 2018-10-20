@@ -25,9 +25,13 @@ This pipeline is a work in progress.  The steps are:
     A. run the command:
 	`sh merge_by_chrom VCFLIST`.  VCFLIST should be a text file of the names of the vcfs to be merged, with the 'chr_N_' prefix removed.  A good way to do this might be: `for file in chr_1_SGDP_*vcf.gz; do echo ${file#chr_1_} >> VCFLIST; done`
 	
-3. (Still to do)  Remove sites with 20% or more missing data
+3.  Remove sites with 20% or more missing data
 
-    A. (need to write this script) probably a python script which eliminates undesired rows while keeping headers.  May subsequently need to re-tabix
+    A. filter_missing_data.py FILE.  To do this for many files in parallel, run:
+	`for file in chr_*.vcf.gz; do bsub -q voight_normal -o filter_${file}.out -e filter_${file}.err "filter_missing_data.py ${file}"; done`
+	
+	- Leaves _very_ little data.  A very large percentage of sites seem to have a large amount of missing data.
+	- May need to bgzip and tabix after running.  Currently produces (unzipped) vcf.
 
 3b? FILTER SINGLETONS?  Not sure whether this makes sense given the size of the dataset
 

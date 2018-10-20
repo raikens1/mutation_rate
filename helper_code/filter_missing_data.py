@@ -25,28 +25,28 @@ with more than 20% missing data removed
 def main():
     min_data = 0.8
     infile = argv[1]
-    outfile = infile.split(".")[0] + "_missing_filtered.vcf.gz"
+    outfile = infile.split(".")[0] + "_missing_filtered.vcf"
 
     accept = 0
     reject = 0
 
     print "Copying variants with >=%d percent non-missing data from %s to %s" % (min_data*100, infile, outfile)
 
-    o = gzip.open(outfile, "a")
+    o = open(outfile, "a")
 
     with gzip.open(infile) as f:
 	for line in f:
 	    if line.startswith('#'):
-            o.write(line)
-        else:
-		    row = line.split("\t")
-		    if sufficient_data(parse_row(row), min_data):
-                accept += 1
-		        o.write(line)
+                o.write(line)
             else:
-                reject += 1
+		row = line.split("\t")
+		if sufficient_data(parse_row(row), min_data):
+                    accept += 1
+		    o.write(line)
+                else:
+                    reject += 1
 
-    print "After filtering, kept %d out of %d variants.  %d remain." % (reject, accept+reject, accept)
+    print "After filtering, removed %d out of %d variants.  %d remain." % (reject, accept+reject, accept)
 
     o.close()
 
