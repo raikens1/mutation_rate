@@ -27,6 +27,9 @@ def main():
     infile = argv[1]
     outfile = infile.split(".")[0] + "_missing_filtered.vcf.gz"
 
+    accept = 0
+    reject = 0
+
     print "Copying variants with >=%d percent non-missing data from %s to %s" % (min_data*100, infile, outfile)
 
     o = gzip.open(outfile, "a")
@@ -34,11 +37,16 @@ def main():
     with gzip.open(infile) as f:
 	for line in f:
 	    if line.startswith('#'):
-                o.write(line)
+            o.write(line)
+        else:
+		    row = line.split("\t")
+		    if sufficient_data(parse_row(row), min_data):
+                accept += 1
+		        o.write(line)
             else:
-		row = line.split("\t")
-		if sufficient_data(parse_row(row), min_data):
-		    o.write(line)
+                reject += 1
+
+    print "After filtering, kept %d out of %d variants.  %d remain." % (reject, accept+reject, accept)
 
     o.close()
 
@@ -50,9 +58,7 @@ input: missing_char (str), character representing missing data
 output: (boolean): true if >= min_data % of alleles are not missing
 """
 def sufficient_data(GT_list, min_data, missing_char = "."):
-    print GT_list
     percent_present = 1 - GT_list.count(missing_char)/float(len(GT_list))
-    print percent_present
     return (percent_present >= min_data)
 
 """
