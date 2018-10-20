@@ -15,8 +15,6 @@ USEAGE: python filter_missing_data.py INPUT.vcf.gz
 =============================================================
 """
 
-# TODO:
-# - [ ] implement shell call to tabix output file
 
 """
 Generate an output vcf.gz which is identical to the input vcf.gz with any rows
@@ -28,7 +26,10 @@ def main():
     outfile = infile.split(".")[0] + "_missing_filtered.vcf"
 
     accept = 0
-    reject = 0
+    singles = 0
+    all_ref = 0
+    missing = 0
+
 
     print "Copying variants with >=%d percent non-missing data from %s to %s" % (min_data*100, infile, outfile)
 
@@ -37,18 +38,30 @@ def main():
     with gzip.open(infile) as f:
 	for line in f:
 	    if line.startswith('#'):
-                o.write(line)
-            else:
-		row = line.split("\t")
-		if sufficient_data(parse_row(row), min_data):
-                    accept += 1
-		    o.write(line)
+            o.write(line)
+        else:
+            row = line.split("\t")
+            GTs = parse_row(row)
+            if sufficient_data(GTs, min_data):
+                alts = GTS.count("1")
+                if alts == 1:
+                    singles += 1
+                else if alts == 0:
+                    all_ref +=1
                 else:
-                    reject += 1
-
-    print "After filtering, removed %d out of %d variants.  %d remain." % (reject, accept+reject, accept)
+                    accept += 1
+                    o.write(line)
+            else:
+                missing += 1
 
     o.close()
+
+    refect = missing + singles + all_ref
+
+    print "After filtering, removed %d out of %d variants.  %d remain." % (reject, accept+reject, accept)
+    print "\t Too much missing data: ", missing
+    print "\t No alternate alleles in dataset: ", all_ref
+    print "\t Singletons: ", singles
 
 """
 Given a list of alleles, return true if a sufficient amount of data is present
