@@ -16,8 +16,6 @@ USEAGE: python filter_missing_data.py INPUT.vcf.gz
 """
 
 # TODO:
-# - [ ] implement check for sufficient_data
-# - [ ] better naming for output file
 # - [ ] implement shell call to tabix output file
 
 """
@@ -27,7 +25,7 @@ with more than 20% missing data removed
 def main():
     min_data = 0.8
     infile = argv[1]
-    outfile = "outfile.vcf.gz"# infile[:-3] + "_" + self.mutsfile.split(".")[0]
+    outfile = infile.split(".")[0] + "_missing_filtered.vcf.gz"
 
     print "Copying variants with >=%d percent non-missing data from %s to %s" % (min_data*100, infile, outfile)
 
@@ -43,7 +41,6 @@ def main():
 		    o.write(line)
 
     o.close()
-    # bonus points: tabix new file.
 
 """
 Given a list of alleles, return true if a sufficient amount of data is present
@@ -68,7 +65,6 @@ def parse_row(row):
     GTs = [col[:3] for col in GT_cols] # extract just GT
     allele_lists = [s.split("/") for s in GTs] # separate GTs into lists of alleles
     return [item for sublist in allele_lists for item in sublist]
-
 
 if __name__ == '__main__':
 	main()
