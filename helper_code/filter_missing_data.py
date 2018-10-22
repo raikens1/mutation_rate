@@ -29,6 +29,7 @@ def main():
     singles = 0
     all_ref = 0
     missing = 0
+    multiallelic = 0
 
 
     print "Copying variants with >=%d percent non-missing data from %s to %s" % (min_data*100, infile, outfile)
@@ -38,27 +39,30 @@ def main():
     with gzip.open(infile) as f:
 	for line in f:
 	    if line.startswith('#'):
-            o.write(line)
-        else:
-            row = line.split("\t")
-            GTs = parse_row(row)
-            if sufficient_data(GTs, min_data):
-                alts = GTS.count("1")
-                if alts == 1:
-                    singles += 1
-                else if alts == 0:
-                    all_ref +=1
-                else:
-                    accept += 1
-                    o.write(line)
+                o.write(line)
             else:
-                missing += 1
+                row = line.split("\t")
+                GTs = parse_row(row)
+                if sufficient_data(GTs, min_data):
+                    alts = GTs.count("1")
+                    if len(row[4]) != 1:
+                        multiallelic += 1
+                    elif alts == 1:
+                        singles += 1
+                    elif alts == 0:
+                        all_ref +=1
+                    else:
+                        accept += 1
+                        o.write(line)
+                else:
+                    missing += 1
 
     o.close()
 
-    refect = missing + singles + all_ref
+    reject = multiallelic + missing + singles + all_ref
 
     print "After filtering, removed %d out of %d variants.  %d remain." % (reject, accept+reject, accept)
+    print "\t Multiallelic: ", multiallelic
     print "\t Too much missing data: ", missing
     print "\t No alternate alleles in dataset: ", all_ref
     print "\t Singletons: ", singles
