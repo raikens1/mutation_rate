@@ -1,0 +1,48 @@
+---
+title: "Replication in Simons Genome Diversity Project"
+author: "Rachael Caelie (Rocky) Aikens"
+date: "10/29/2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE)
+knitr::opts_knit$set(root.dir = '../../data')
+
+library(ggplot2)
+library(gplots)
+library(stats)
+library(readr)
+library(dplyr)
+library(knitr)
+require(reshape2)
+library(gridExtra)
+library(grid)
+require("ggrepel")
+```
+
+# Introduction
+
+This document is meant to show all our efforts to replicate our study in the Simons Genome Diversity Project (SGDP).  Since SGDP dataset is much smaller than the 1,000 genomes dataset, extra care must be taken to conserve statistical power.  As a result, we will only replicate a subset of our discoveries from the main analysis, and restrict the number of hypothesis tests to a minimum where possible.
+
+# 3-mer Substitution Classes that Vary Across Continents
+
+## Test for Homogenity Across all Continental Groups
+
+Here, we run the same p-ordered hypothesis test the we used on the 1,000 genomes dataset.  However, we will test for the significance of variation in the top 15 polymorphism classes listed in Table 1.
+
+## Inferred Mutation Rate in top 15 Heterogeneous 3-mers
+
+Here, we will calculate the inferred mutation rate of the 3-mers from table 1.
+
+## Signatures of Variation at the 3-mer Level
+
+We will not attempt to construct a heatmap of the 3-mer signatures from the SGDP data, since this analysis on 1,000 genomes was mostly heuristic.  However, we will plot the inferred mutation rate from SGDP for each of the signatures reported in figure 1
+
+# Broader Sequence Contexts of 3-mer Signatures
+
+We will not attempt to replicate scatter plots as in Figure 2 because it is not likely that inferred mutation rate for 7-mers in SGDP will be accurate enough for these plots to be meaningful.  Likewise, the suggestion that certain 7-mers are driving the *AC$\rightarrow$C enrichment in Japan compared to East Asia is an interesting result, but since there are 5 Chinese Dai and 3 Japanese individuals in SGDP, attempting to replicate this result may not be appropriate.  Replicating this result would most-likely call for a large Asian genomic dataset, the likes of which are not publically available to our knowledge.
+
+# Signatures of Variation at Broader Sequence Contexts
+
+We will not attempt hypothesis testing across all 5-mer and 7-mer polymorphism classes, since many of these tests are sure to invlolve too few observations to be carried out, and the hypothesis testing burden would massively reduce statistical power.  Rather, we will repeat the hypothesis tests for only the 7-mer classes shown in table 3.  We will additionally plot the inferred mutation rate of the WTTAAA$\rightarrow$T 7-mers across continents.
