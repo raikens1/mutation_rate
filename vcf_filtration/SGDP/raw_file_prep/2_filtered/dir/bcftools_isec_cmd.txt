@@ -1,0 +1,1 @@
+bcftools isec -n=1 AFR/chr_22_SGDP_AFR_all_snps.vcf.gz EUR/chr_22_SGDP_EUR_all_snps.vcf.gz EAS/chr_22_SGDP_EAS_all_snps.vcf.gz SAS/chr_22_SGDP_SAS_all_snps.vcf.gz

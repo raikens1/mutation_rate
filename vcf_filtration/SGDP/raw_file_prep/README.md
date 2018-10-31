@@ -1,6 +1,6 @@
 # Raw File Prep
 
-The purpose of this directory is to hold SGDP files as they are processed into usable-sized vcfs. Not all intermediate files from this process can be saved in this directory due to memory constraints. 
+The purpose of this directory is to hold SGDP files as they are processed into usable-sized vcfs. Not all intermediate files from this process can be saved in this directory due to memory constraints. For details on the precise files that were downloaded for this pipeline, see DATA_NOTES.md
 
 This pipeline is a work in progress.  The steps are:
 
@@ -13,31 +13,22 @@ This pipeline is a work in progress.  The steps are:
 
         Note: vcf downloads on sciget take about 10 minutes; tbi's are almost instantaneous.
 
-1. Filter each file in parallel by chromosome 
+1. Marge files of each individual into a population reference file (in parallel by chromosome) 
 
    A. run the command:
-        `sh SGDP_filter.sh FILENAME`
+        `sh SGDP_merge.sh FILE_LIST POP`
 
-        Note: this script will queue one job on scisub for each chromosome.  Most jobs seem to take no more than 10 minutes.  Needs to be run in a loop over many files.  For example: for file in SGDP_AFR_*: do sh SGDP_filter.sh ${file}; done
+        Notes: 
+		- This script will queue one job on scisub for each chromosome.
+		- A list of file names to merge is required.  To make this, one might run something like `for file in SGDP*.vcf.gz; do echo ${file} >> FILE_LIST; done
+		 - Extracts only the noncoding regions of each chromosome.
 
-2. Combine files of individuals into a single POP reference file
+2. Filter the chromosome reference files to include only biallelic SNPs with <= 20% missing data and no singletons
 
     A. run the command:
-	`sh merge_by_chrom VCFLIST`.  VCFLIST should be a text file of the names of the vcfs to be merged, with the 'chr_N_' prefix removed.  A good way to do this might be: `for file in chr_1_SGDP_*vcf.gz; do echo ${file#chr_1_} >> VCFLIST; done`
+	`sh SGDP_filter FILENAME`
+
+	Notes: 
+		-This should be run in a loop over each chromosome.  To do this, run `for file in chr*_.vcf.gz; do sh SGDP_filer ${file}; done
 	
-3.  Remove sites with 20% or more missing data
-
-    A. filter_missing_data.py FILE.  To do this for many files in parallel, run:
-	`for file in chr_*.vcf.gz; do bsub -q voight_normal -o filter_${file}.out -e filter_${file}.err "filter_missing_data.py ${file}"; done`
-	
-	- Leaves _very_ little data.  A very large percentage of sites seem to have a large amount of missing data.
-	- May need to bgzip and tabix after running.  Currently produces (unzipped) vcf.
-
-3b? FILTER SINGLETONS?  Not sure whether this makes sense given the size of the dataset
-
-4. (script mostly written) Use vcf-isec to retrieve population-specific variants
-
-
-## Notes
-
-Not certain yet whether it makes sense to remove singletons from this analysis.
+3. (script mostly written) Use vcf-isec to retrieve population-specific variants
