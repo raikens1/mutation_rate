@@ -120,8 +120,8 @@ class Counter(object):
 		pos = pos - 1 - self.flank
 		pos += pos/50 - int(pos%50 == 0)
 
-		ref_file = "/project/voight_datasets/hg19/chr%s.fa" % chr
-		hg = open(ref_file, "r")
+		ref_file = "/project/voight_datasets/hg19/chr%s.fa.gz" % chr
+		hg = gzip.open(ref_file, "r")
 
 		hg.readline() # skip header
 		hg.seek(pos, 1) # go to position
