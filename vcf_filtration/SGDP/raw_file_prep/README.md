@@ -31,4 +31,10 @@ This pipeline is a work in progress.  The steps are:
 	Notes: 
 		-This should be run in a loop over each chromosome.  To do this, run `for file in chr*_.vcf.gz; do sh SGDP_filer ${file}; done
 	
-3. (script mostly written) Use vcf-isec to retrieve population-specific variants
+3. Use bcftools isec to retrieve population-specific variants
+
+    A. Go to the subdirectory `2_filtered`
+
+    B. Run the command `sh ../SGDP_bcftools_isec.sh POP CHROM` for all 23 chromosomes and 4 pops.  Best to use a `for` loop over the numeric chromosomes.
+
+
