@@ -1,0 +1,323 @@
+---
+title: "Replication in Simons Genome Diversity Project"
+author: "Rachael Caelie (Rocky) Aikens"
+date: "10/29/2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE)
+knitr::opts_knit$set(root.dir = '../../data')
+
+library(ggplot2)
+library(gplots)
+library(stats)
+library(readr)
+library(dplyr)
+library(knitr)
+require(reshape2)
+library(gridExtra)
+library(grid)
+require("ggrepel")
+```
+
+# Introduction
+
+This document is meant to show all our efforts to replicate our study in the Simons Genome Diversity Project (SGDP).  Since SGDP dataset is much smaller than the 1,000 genomes dataset, extra care must be taken to conserve statistical power.  As a result, we will only replicate a subset of our discoveries from the main analysis, and restrict the number of hypothesis tests to a minimum where possible.
+
+# 3-mer Substitution Classes that Vary Across Continents
+
+## Test for Homogenity Across all Continental Groups
+
+Here, we run the same p-ordered hypothesis test the we used on the 1,000 genomes dataset.  However, we will test for the significance of variation in the top 15 polymorphism classes listed in Table 1.
+
+To make this table, we need the following **functions** and *datasets*:
+
+* *3mer count dataframes for all ancestral continental groups*
+
+```{r F1BCD setup data}
+AFR_3mer_counts <- read_delim("3mer/SGDP_AFR_3mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+EUR_3mer_counts <- read_delim("3mer/SGDP_EUR_3mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+EAS_3mer_counts <- read_delim("3mer/SGDP_EAS_3mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+SAS_3mer_counts <- read_delim("3mer/SGDP_SAS_3mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+```
+
+* **Fourway.chi** Tests for heterogeneity among any four count dataframes
+* **ordered.p** performs ordered p value correction
+
+```{r T1 setup methods}
+# calculates homogeneity test p values for Fourway comparisons of counts dfs
+fourway.chi <- function(AFR, EUR, EAS, SAS, filter = T){
+  n.contexts = length(AFR$Context)
+  
+  # make dataframe for results
+  result <- data.frame(matrix(ncol=9,nrow=n.contexts))
+  colnames(result) <- c("Context", "X5mer","X3mer", "X1mer", 
+                        "AFR.Count", "EUR.Count", "EAS.Count", "SAS.Count", "p")
+  result$Context <- AFR$Context
+  result$X5mer <- AFR$X5mer # for smaller contexts, X3mer and X5mer columns do not exist,
+  result$X3mer <- AFR$X3mer # and will disappear at this step
+  result$X1mer <- AFR$X1mer 
+  result$AFR.Count <- AFR$Count; result$EUR.Count <- EUR$Count
+  result$EAS.Count <- EAS$Count; result$SAS.Count <- SAS$Count
+  
+  # start setting up tables
+  sums <- c(sum(AFR$Count), sum(EUR$Count), sum(EAS$Count), sum(SAS$Count))
+  
+  # set up table and run test for each context
+  for (i in 1:n.contexts){
+    c.a <- c(AFR$Count[i], EUR$Count[i], EAS$Count[i], SAS$Count[i])
+    c.b <- sums - c.a
+    data <- cbind(c.a, c.b)
+    warning <- is(tryCatch(chisq.test(data), warning = function(w) w), "warning")
+    if (filter == T & warning){
+      result$p[i] <- NA}
+    else result$p[i] <- chisq.test(data)$p.value
+    }
+  return(result)
+}
+
+ordered.p <- function(pdata){
+  # preprocess data to order and remove nas 
+  pdata <- pdata[complete.cases(pdata$p),]
+  myorder <- order(pdata$p)
+  n.muts <- length(pdata$p)
+  
+  p.ordered <- rep(0, n.muts)
+  
+  # set largest p-value 
+  j <- myorder[n.muts]
+  p.ordered[j] <- pdata$p[j]
+  
+  # initialize not mutated counts based on this lowest p-value mutation
+  not.mut <- c(pdata$AFR.Count[j], pdata$EUR.Count[j], 
+               pdata$EAS.Count[j], pdata$SAS.Count[j])
+  
+  for (i in n.muts:1){
+    j <- myorder[i]
+    mut <-c(pdata$AFR.Count[j], pdata$EUR.Count[j], 
+            pdata$EAS.Count[j], pdata$SAS.Count[j])
+    data <- cbind(mut, not.mut)
+    p.ordered[j] <- chisq.test(data)$p.value
+    
+    # add these mutations to the not.mutated counts for future tests
+    not.mut <- not.mut + mut
+  }
+  pdata$p <- p.ordered
+  return(pdata)
+}
+
+pairwise.op <- function(pdata){
+  # preprocess data to order and remove nas 
+  pdata <- pdata[complete.cases(pdata$p),]
+  myorder <- order(pdata$p)
+  n.muts <- length(pdata$p)
+  
+  p.ordered <- rep(0, n.muts)
+  
+  # set largest p-value 
+  j <- myorder[n.muts]
+  p.ordered[j] <- pdata$p[j]
+  
+  # initialize not mutated counts based on this lowest p-value mutation
+  not.mut <- c(pdata$Counts1[j], pdata$Counts2[j])
+  
+  for (i in n.muts:1){
+    j <- myorder[i]
+    mut <-c(pdata$Counts1[j], pdata$Counts2[j])
+    data <- cbind(mut, not.mut)
+    p.ordered[j] <- chisq.test(data)$p.value
+    
+    # add these mutations to the not.mutated counts for future tests
+    not.mut <- not.mut + mut
+  }
+  pdata$p <- p.ordered
+  return(pdata)
+}
+```
+
+```{r run tests}
+top_15_from_1kg <- c("TCC->T", "ACC->T", "TCT->T",
+                     "GAT->T", "ACC->A", "CCC->T",
+                     "ACA->T", "TCA->T", "ACT->T",
+                     "TCG->T", "ACG->T", "GCG->T",
+                     "GCT->T", "GAC->T", "GCC->T")
+
+# calculate ordered p values
+p.3mer <- fourway.chi(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts)
+o.p.3mer <- ordered.p(p.3mer)
+
+# Construct table 1
+alpha <- 0.05/length(o.p.3mer$Context)
+rates <- cbind(AFR_3mer_counts$Rate, EUR_3mer_counts$Rate, SAS_3mer_counts$Rate, EAS_3mer_counts$Rate)
+table1 <- cbind(o.p.3mer$Context, rates/AFR_3mer_counts$Rate, o.p.3mer$p)
+colnames(table1)<- c("Context", "AFR relative rate", "EUR relative rate", "SAS relative rate", "EAS relative rate", "p")
+
+table1_SGDP <- filter(table1, Context %in% top_15_from_1kg) %>%
+  arrange(-p)
+
+# show result
+kable(table1_SGDP, digits = 600, row.names = F,
+      caption = "Replication of Table 1 with data from SGDP")
+```
+
+## Inferred Mutation Rate in top 15 Heterogeneous 3-mers
+
+Here, we will calculate the inferred mutation rate of the 3-mers from table 1.
+
+```{r load gw_3mer_counts }
+gw_3mer_counts <- read_delim("gw_counts/gw_3mer_counts.txt", 
+                             "\t", escape_double = FALSE, trim_ws = TRUE)
+```
+
+```{r S2 functions}
+CI.plot <- function(AFR, EUR, EAS, SAS, mut, small = F) {
+  n <- nchar(mut)
+  ref <- substr(mut, 1, n-3)
+  alt <- substr(mut, n, n)
+  mut.i <- which(AFR$Context == mut)
+  popnames <- c("AFR","EUR", "SAS", "EAS")
+  colors <- c("forestgreen", "darkblue", "magenta","red")
+  
+  #have to do a silly workaround or R will sort popnames alphanumerically
+  poplabs <- factor(popnames, levels= popnames)
+  
+  #cycle through pops and get counts for mut
+  counts <- rep(0, 4)
+  sums <- rep(0, 4)
+  pops <- list(AFR, EUR, SAS, EAS)
+  
+  for (i in 1:length(pops)){
+    counts[i] <- pops[[i]]$Count[mut.i]
+    sums[i]<- sum(pops[[i]]$Count)
+  }
+  
+  #estimate substitution probability
+  N.c <- AFR$context_in_genome[mut.i] 
+  theta <- counts/N.c
+  L <- theta - 1.96*sqrt(theta*(1-theta)/N.c)
+  U <- theta + 1.96*sqrt(theta*(1-theta)/N.c)
+  
+  #normalize to rate estimate; assume genome wide subsitution probability is measured without error
+  norm <- 1.2E-8*(sum(as.numeric(AFR$context_in_genome))/3)/sums
+  
+  df <- data.frame(cbind(popnames, theta*norm, L*norm, U*norm))
+  plotcol <- reorder(colors, theta*norm)
+  
+  CIplot <- ggplot(df, aes(reorder(popnames, c(1,2,3,4)), theta*norm)) +
+    geom_point(size = 2, color = plotcol) +
+    geom_errorbar(aes(ymax = U*norm, ymin = L*norm), color = plotcol, size =.75)+
+    labs(title = bquote(.(ref)%->%.(alt) ~ "mutation rate"), y = NULL) + #y axis label
+    theme(axis.text.x = element_text(size = rel(.7)), axis.title.x = element_blank(), #adjust text sizes
+          axis.title.y = element_text(size = rel(.7)), axis.text.y = element_text(size = rel(.7), angle = 0, hjust = 0.5), title = element_text(size = rel(.5)),
+          legend.position = 'none')
+  
+  if (small) {
+    CIplot <- CIplot + theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())+
+      labs(title = bquote(.(ref)%->%.(alt)))
+  }
+  
+  return(CIplot)
+}
+```
+
+```{r, fig.keep = "none" }
+blank <- grid.rect(gp=gpar(col="white"))
+```
+
+```{r S2 make figure, fig.height = 8, fig.width=7}
+a <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "TCC->T", small = F)
+b <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "ACC->T", small = F)
+c <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "TCT->T", small = F)
+d <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "CCC->T", small = F)
+e <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "TCA->T", small = F)
+f <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "ACT->T", small = F)
+g <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "GCC->T", small = F)
+h <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "GAT->T", small = F)
+i <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "ACC->A", small = F)
+j <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "GCT->T", small = F)
+k <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "GAC->T", small = F)
+l <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "TCG->T", small = F)
+m <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "ACG->T", small = F)
+n <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "GCG->T", small = F)
+o <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "ACA->T", small = F)
+
+grid.arrange(a,b,c,d,e,f,g,blank, h,i,j,k,l,m,n,o, ncol = 4)
+```
+
+## Signatures of Variation at the 3-mer Level
+
+We will not attempt to construct a heatmap of the 3-mer signatures from the SGDP data, since this analysis on 1,000 genomes was mostly heuristic.  However, we will plot the inferred mutation rate from SGDP for each of the signatures reported in figure 1.
+
+To make these panels, I need the following **functions** and *datasets*:
+
+* **CI.plot.bygroup** Makes a plot of the rates of a group of mutations.  Will bug out if the mutations are of the same context, although that's not a problem for these figures.
+
+```{r F1BCD setup methods}
+CI.plot.bygroup <- function(AFR, EUR, EAS, SAS, muts, groupname = "mutation group") {
+  #NOTE: muts must all be from different contexts.  Otherwise this will do weird things.
+  
+  muts.i <- which(is.element(AFR$Context, muts))
+  popnames <- c("Africa","Europe", "South\nAsia\n\n", "East\nAsia\n\n")
+  colors <- c("forestgreen", "darkblue", "magenta","red")
+  
+  #have to do a silly workaround or R will sort popnames alphanumerically
+  poplabs <- factor(popnames, levels= popnames)
+  
+  #cycle through pops and get counts for mut
+  counts <- rep(0, 4)
+  sums <- rep(0, 4)
+  pops <- list(AFR, EUR, SAS, EAS)
+  
+  for (i in 1:length(pops)){
+    counts[i] <- sum(pops[[i]]$Count[muts.i]) #number of obersvations of muts in pop
+    sums[i]<- sum(pops[[i]]$Count)#total polymorphisms in pop
+  }
+  
+  #estimate substitution probability
+  N.c <- sum(AFR$context_in_genome[muts.i])
+  theta <- counts/N.c
+  L <- theta - 1.96*sqrt(theta*(1-theta)/N.c)
+  U <- theta + 1.96*sqrt(theta*(1-theta)/N.c)
+  
+  #normalize to rate estimate; assume genome wide subsitution probability is measured without error
+  norm <- 1.2E-8*(sum(as.numeric(AFR$context_in_genome))/3)/sums
+  
+  df <- data.frame(cbind(popnames, theta*norm, L*norm, U*norm))
+  plotcol <- reorder(colors, theta*norm)
+  
+  CI.plot <- ggplot(df, aes(reorder(popnames, c(1,2,3,4)), theta*norm)) +
+    geom_point(size = 3, color = plotcol) +
+    geom_errorbar(aes(ymax = U*norm, ymin = L*norm), color = plotcol, size =.75)+
+    labs(title = paste("Estimated mutation\nrate of", groupname), y = NULL) + #y axis label
+    theme(axis.text.x = element_text(size = rel(.8)), axis.title.x = element_blank(), #adjust text sizes
+          axis.title.y = element_text(size = rel(.9)), axis.text.y = element_text(size = rel(.9), angle = 0, hjust = 0.5), title = element_text(size = rel(.7)),
+          legend.position = 'none')
+  return(CI.plot)
+}
+
+```
+
+```{r F1BCD make, fig.height=2.5, fig.width=6.5}
+s1 <- c("TCT->T", "ACC->T", "TCA->T", "CCC->T", "ACT->T", "TCC->T", "GCC->T")
+a <- CI.plot.bygroup(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, s1, "profile #1")
+
+s2 <- c("GAT->T", "ACC->A", "GAC->T")
+b <- CI.plot.bygroup(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, s2, "profile #2")
+
+s4 <-c("ACG->T", "CCG->T", "GCG->T", "TCG->T")
+d <- CI.plot.bygroup(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, s4, "profile #4")
+```
+
+
+# Broader Sequence Contexts of 3-mer Signatures
+
+We will not attempt to replicate scatter plots as in Figure 2 because it is not likely that inferred mutation rate for 7-mers in SGDP will be accurate enough for these plots to be meaningful.  Likewise, the suggestion that certain 7-mers are driving the *AC$\rightarrow$C enrichment in Japan compared to East Asia is an interesting result, but since there are 5 Chinese Dai and 3 Japanese individuals in SGDP, attempting to replicate this result may not be appropriate.  Ideally, this preliminary finding could be replicated and perhaps further explored in a large Asian genomic dataset, the likes of which, to our knowledge, are currently not publically available.
+
+# Signatures of Variation at Broader Sequence Contexts
+
+We will not attempt hypothesis testing across all 5-mer and 7-mer polymorphism classes, since many of these tests are sure to invlolve too few observations to be carried out, and the hypothesis testing burden would massively reduce statistical power.  Rather, we will repeat the hypothesis tests for only the 7-mer classes shown in table 3.  We will additionally plot the inferred mutation rate of the WTTAAA$\rightarrow$T 7-mers across continents.

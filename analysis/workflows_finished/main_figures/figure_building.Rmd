@@ -181,7 +181,7 @@ table1 <- head(table1, 15)
 
 # plot significant 7mers and print most signif. new results
 kable(table1, digits = 600, row.names = F,
-      caption = "15 most significant new 7mers using ordered p value correction")
+      caption = "15 most significant 3mers using ordered p value correction")
 ```
 
 Certain table entries are bold if they are significantly enriched in Africa.  The code below calculates which threemers are significantly different (p<1e-5) between AFR and EUR in table 1.
