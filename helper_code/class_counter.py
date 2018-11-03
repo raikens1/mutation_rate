@@ -1,5 +1,6 @@
 import gzip
 from itertools import product
+from Bio import SeqIO
 
 """
 RA, 7/27/2017
