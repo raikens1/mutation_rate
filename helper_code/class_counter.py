@@ -32,8 +32,8 @@ class Counter(object):
 		self.flank = flank
 		self.compliments = {"A":"T", "T":"A", "G":"C", "C":"G"}
 		self.counts = self.init_counts()
-        self.chrom = ''
-        self.ref_genome_chr = ''
+		self.chrom = ''
+		self.ref_genome_chr = ''
 
 	#helper function to initialize counts dictionary
 	def init_counts(self):
