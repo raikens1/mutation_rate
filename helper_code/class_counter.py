@@ -32,6 +32,8 @@ class Counter(object):
 		self.flank = flank
 		self.compliments = {"A":"T", "T":"A", "G":"C", "C":"G"}
 		self.counts = self.init_counts()
+        self.chrom = ''
+        self.ref_genome_chr = ''
 
 	#helper function to initialize counts dictionary
 	def init_counts(self):
@@ -72,10 +74,25 @@ class Counter(object):
 						with open(infile[:-3] + "_counts.log", "a") as log:
 							log.write("Counted %s variants\n" % i)
 
+    # load new chrom file
+    def switchChrom(self, chrom):
+        print "Loading new chromosome sequence...",
+        self.ref_genome_chr = SeqIO.read('/project/voight_datasets/hg19/chr'+chrom+'.fa', "fasta")
+        print "done!"
+        self.chrom = chrom
+
+    # given position, get context
+    def get_context(self, pos):
+        return str(self.ref_genome_chr.seq)[pos-(self.flank+1):pos+self.flank].upper()
 
 	#given a line from a file, return sequence context(e.g. "TCC->T")
 	def parse_context(self, line):
 		row = line.split("\t")
+
+		file_chrom = row[0].split("r")[-1] # if "chr" is prepended to chromosome field, remove it
+		if file_chrom != self.chrom:
+			self.switchChrom(file_chrom)
+
 		sequence = self.get_context(row[0], int(row[1]))
 		context = sequence + "->" + row[4]
 		return context
@@ -113,25 +130,3 @@ class Counter(object):
 			return self.compliments[ref] + "->" + self.compliments[context[-1]]
 		else:
 			return context[self.flank] + '->' + context[-1]
-
-	#given position and chromosome, return reference sequence with flanking context
-	def get_context(self, chr, pos):
-		# adjust pos to account for newline characters in fasta
-		pos = pos - 1 - self.flank
-		pos += pos/50 - int(pos%50 == 0)
-
-		ref_file = "/project/voight_datasets/hg19/chr%s.fa.gz" % chr
-		hg = gzip.open(ref_file, "r")
-
-		hg.readline() # skip header
-		hg.seek(pos, 1) # go to position
-
-		k = 1+2*self.flank
-		seq = ''
-
-		while len(seq) !=k:
-			seq += hg.read(1).strip() #read from start position, skipping '\n'
-
-		hg.close()
-
-		return seq.upper()
