@@ -94,7 +94,7 @@ class Counter(object):
 		if file_chrom != self.chrom:
 			self.switchChrom(file_chrom)
 
-		sequence = self.get_context(row[0], int(row[1]))
+		sequence = self.get_context(int(row[1]))
 		context = sequence + "->" + row[4]
 		return context
 
