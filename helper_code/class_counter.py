@@ -73,17 +73,17 @@ class Counter(object):
 					if i % 1000 == 0:
 						with open(infile[:-3] + "_counts.log", "a") as log:
 							log.write("Counted %s variants\n" % i)
-							
+
     # load new chrom file
 	def switchChrom(self, chrom):
-        print "Loading new chromosome sequence...",
-        self.ref_genome_chr = SeqIO.read('/project/voight_datasets/hg19/chr'+chrom+'.fa', "fasta")
-        print "done!"
-        self.chrom = chrom
+		print "Loading new chromosome sequence...",
+		self.ref_genome_chr = SeqIO.read('/project/voight_datasets/hg19/chr'+chrom+'.fa', "fasta")
+		print "done!"
+		self.chrom = chrom
 
-    # given position, get context
-    def get_context(self, pos):
-        return str(self.ref_genome_chr.seq)[pos-(self.flank+1):pos+self.flank].upper()
+	# given position, get context
+	def get_context(self, pos):
+		return str(self.ref_genome_chr.seq)[pos-(self.flank+1):pos+self.flank].upper()
 
 	#given a line from a file, return sequence context(e.g. "TCC->T")
 	def parse_context(self, line):
