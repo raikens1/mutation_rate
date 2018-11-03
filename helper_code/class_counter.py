@@ -73,9 +73,9 @@ class Counter(object):
 					if i % 1000 == 0:
 						with open(infile[:-3] + "_counts.log", "a") as log:
 							log.write("Counted %s variants\n" % i)
-
+							
     # load new chrom file
-    def switchChrom(self, chrom):
+	def switchChrom(self, chrom):
         print "Loading new chromosome sequence...",
         self.ref_genome_chr = SeqIO.read('/project/voight_datasets/hg19/chr'+chrom+'.fa', "fasta")
         print "done!"
