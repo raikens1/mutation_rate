@@ -152,7 +152,6 @@ p.3mer <- fourway.chi(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3me
 o.p.3mer <- ordered.p(p.3mer)
 
 # Construct table 1
-alpha <- 0.05/length(o.p.3mer$Context)
 rates <- cbind(AFR_3mer_counts$Rate, EUR_3mer_counts$Rate, SAS_3mer_counts$Rate, EAS_3mer_counts$Rate)
 table1 <- cbind(o.p.3mer$Context, rates/AFR_3mer_counts$Rate, o.p.3mer$p)
 colnames(table1)<- c("Context", "AFR relative rate", "EUR relative rate", "SAS relative rate", "EAS relative rate", "p")
@@ -320,4 +319,86 @@ We will not attempt to replicate scatter plots as in Figure 2 because it is not 
 
 # Signatures of Variation at Broader Sequence Contexts
 
-We will not attempt hypothesis testing across all 5-mer and 7-mer polymorphism classes, since many of these tests are sure to invlolve too few observations to be carried out, and the hypothesis testing burden would massively reduce statistical power.  Rather, we will repeat the hypothesis tests for only the 7-mer classes shown in table 3.  We will additionally plot the inferred mutation rate of the WTTAAA$\rightarrow$T 7-mers across continents.
+We will not attempt hypothesis testing across all 5-mer and 7-mer polymorphism classes, since many of these tests are sure to invlolve too few observations to be carried out, and the hypothesis testing burden would massively reduce statistical power.  Rather, we will repeat the hypothesis tests for only the 7-mer classes shown in table 3.
+
+```{r load 7mer data}
+AFR_7mer_counts <- read.delim('7mer/AFR_7mer_counts.txt')
+EUR_7mer_counts <- read.delim('7mer/EUR_7mer_counts.txt')
+EAS_7mer_counts <- read.delim('7mer/EAS_7mer_counts.txt')
+SAS_7mer_counts <- read.delim('7mer/SAS_7mer_counts.txt')
+
+gw_7mer_counts <- read_delim("gw_counts/gw_7mer_counts.txt", 
+                             "\t", escape_double = FALSE, trim_ws = TRUE)
+```
+
+```{r}
+table_3_7mers <- c("CAAACCC->C", "TTTATTT->T", "TTTAAAA->T", "ATTAAAA->T", "AAACAAA->A")
+
+# calculate ordered p values
+p.7mer <- fourway.chi(AFR_7mer_counts, EUR_7mer_counts, EAS_7mer_counts, SAS_7mer_counts)
+o.p.7mer <- ordered.p(p.7mer)
+
+# extract significantly variable mutation types and order by p value
+rates <- cbind(AFR_7mer_counts$Rate, EUR_7mer_counts$Rate, SAS_7mer_counts$Rate, EAS_7mer_counts$Rate)
+table3 <- cbind(o.p.7mer$Context, rates/AFR_7mer_counts$Rate, o.p.7mer$p)
+colnames(table3)<- c("Context", "AFR relative rate", "EUR relative rate", "SAS relative rate", "EAS relative rate", "p")
+
+table3_SGDP <- filter(table1, Context %in% table_3_7mers) %>%
+  arrange(-p)
+
+kable(table3_SGDP, digits = 600, row.names = F,
+      caption = "Table 3 recalculated with SGDP data")
+```
+
+We will additionally plot the inferred mutation rate of the WTTAAA$\rightarrow$T 7-mers across continents. We can't use my usual graphing function to make This figure because there are '$\rightarrow$' characters that we need to insert in the plot text.  
+
+```{r F4B set up data}
+muts <- c("TTTAAAA->T", "ATTAAAA->T")
+AFR <- AFR_7mer_counts
+EUR <- EUR_7mer_counts
+EAS <- EAS_7mer_counts
+SAS <- SAS_7mer_counts
+```
+
+```{r}
+#NOTE: muts must all be from different contexts.  Otherwise this will do weird things.
+muts.i <- which(is.element(AFR$Context, muts))
+popnames <- c("Africa","Europe", "South\nAsia", "East\nAsia")
+colors <- c("forestgreen", "darkblue", "magenta","red")
+
+#have to do a silly workaround or R will sort popnames alphanumerically
+poplabs <- factor(popnames, levels= popnames)
+
+#cycle through pops and get counts for mut
+counts <- rep(0, 4)
+sums <- rep(0, 4)
+pops <- list(AFR, EUR, SAS, EAS)
+
+for (i in 1:length(pops)){
+  counts[i] <- sum(pops[[i]]$Count[muts.i]) #number of obersvations of muts in pop
+  sums[i]<- sum(pops[[i]]$Count)#total polymorphisms in pop
+}
+
+#estimate substitution probability
+N.c <- sum(AFR$context_in_genome[muts.i])
+theta <- counts/N.c
+L <- theta - 1.96*sqrt(theta*(1-theta)/N.c)
+U <- theta + 1.96*sqrt(theta*(1-theta)/N.c)
+
+#normalize to rate estimate; assume genome wide subsitution probability is measured without error
+norm <- 1.2E-8*(sum(as.numeric(AFR$context_in_genome))/3)/sums
+
+df <- data.frame(cbind(popnames, theta*norm, L*norm, U*norm))
+plotcol <- reorder(colors, theta*norm)
+
+b <- ggplot(df, aes(reorder(popnames, c(1,2,3,4)), theta*norm)) +
+  geom_point(size = 3, color = plotcol) +
+  geom_errorbar(aes(ymax = U*norm, ymin = L*norm), color = plotcol, size =.75)+
+  labs(y =  bquote(paste("Mutation rate of")~.("TTTAAAA")%->%.("T")~paste("and")~.("ATTAAAA")%->%.("T"))) + #y axis label
+  theme(axis.text.x = element_text(size = rel(.9)), axis.title.x = element_blank(), #adjust text sizes
+        axis.title.y = element_text(size = rel(1)), axis.text.y = element_text(size = rel(1), angle = 0, hjust = 0.5), title = element_text(size = rel(.7)),
+        legend.position = 'none')
+
+print(b)
+```
+
