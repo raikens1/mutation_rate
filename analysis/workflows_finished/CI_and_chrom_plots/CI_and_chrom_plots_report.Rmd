@@ -468,6 +468,19 @@ d <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts,
 grid.arrange(a,b,c, d, ncol = 2)
 ```
 
+
+```{r}
+e <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts,
+               gw_3mer_counts,"TCG->T")
+f <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts,
+               gw_3mer_counts,"ACG->T")
+g <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts,
+               gw_3mer_counts,"GCG->T")
+h <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts,
+               gw_3mer_counts,"CCG->T")
+grid.arrange(e, f, g, h, ncol = 2)
+```
+
 It is worth nothing that the CpG mutations cluster together in heatmaps, even after normalization.
 
 \pagebreak
@@ -480,6 +493,15 @@ These mutation types have the global profiles shown below:
 
 ```{r, signal4 CI, echo =F}
 CI.plot.subpop(subpops.3mer.ancestral, "AAC->C", pops.ancestral)
+```
+
+
+```{r}
+d <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, mut = "CAC->C")
+e <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts,
+               gw_3mer_counts,"CAC->C")
+
+grid.arrange(d, e, ncol = 2)
 ```
 
 \pagebreak

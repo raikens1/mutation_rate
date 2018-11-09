@@ -6,7 +6,7 @@ output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, message = FALSE)
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 knitr::opts_knit$set(root.dir = '../../data')
 
 library(ggplot2)
@@ -19,11 +19,318 @@ require(reshape2)
 library(gridExtra)
 library(grid)
 require("ggrepel")
+theme_set(theme_light())
 ```
 
 # Introduction
 
 This document is meant to show all our efforts to replicate our study in the Simons Genome Diversity Project (SGDP).  Since SGDP dataset is much smaller than the 1,000 genomes dataset, extra care must be taken to conserve statistical power.  As a result, we will only replicate a subset of our discoveries from the main analysis, and restrict the number of hypothesis tests to a minimum where possible.
+
+# Preliminary Checks for Correctness
+
+```{r 1kg setup data}
+KG_AFR_3mer_counts <- read_delim("3mer/AFR_3mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+KG_EUR_3mer_counts <- read_delim("3mer/EUR_3mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+KG_EAS_3mer_counts <- read_delim("3mer/EAS_3mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+KG_SAS_3mer_counts <- read_delim("3mer/SAS_3mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+```
+
+```{r SGDP setup data}
+AFR_3mer_counts <- read_delim("3mer/SGDP_AFR_3mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+EUR_3mer_counts <- read_delim("3mer/SGDP_EUR_3mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+EAS_3mer_counts <- read_delim("3mer/SGDP_EAS_3mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+SAS_3mer_counts <- read_delim("3mer/SGDP_SAS_3mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+```
+
+## Visualizing dataset agreement
+
+Below is a simple visualization of agreement between the datasets.  For a given polymorphism $c$ and population $P$, the proportion of that polymorphism in the population is defined as:
+
+$$\frac{\text{Number of private polymorphisms of type c in population P}}{\text{Total number of private polymorphisms in population P}}$$
+
+The plot below shows the agreement between polymorphism proportions from 1,000 genomes (x-axis) and SGDP (y-axis) for each population.
+
+```{r}
+KG_vs_SGDP_propotion_scatter <- function(KG, SGDP, title = "Proportions of mutations"){
+  plt_data <- data.frame(KG_proportion = KG$Count/sum(KG$Count),
+                         SGDP_proportion = SGDP$Count/sum(SGDP$Count),
+                         Onemer = KG$X1mer,
+                         Polymorphism = KG$Context) %>%
+    mutate(labels = ifelse(abs(SGDP_proportion-KG_proportion) > 0.001, as.character(Polymorphism), ""))
+  ggplot(plt_data, aes(x = KG_proportion, y = SGDP_proportion, color = Onemer)) +
+    geom_point(size = 0.25) +
+    theme(text = element_text(size=10))+
+    geom_abline(aes(intercept=0,slope=1), size = .5, linetype = 2) +
+    scale_color_manual(values=c("blue", "magenta", "black", "forestgreen","purple", "red")) +
+    labs(x = "Proportion of polymorphisms (1000G)",
+         y = "Proportion of polymorphisms (SGDP)", title = title) +
+    geom_text_repel(aes(label = labels), size = 1.5, segment.size  = 0.2)
+}
+```
+
+```{r, fig.height = 6}
+a <- KG_vs_SGDP_propotion_scatter(KG_AFR_3mer_counts, AFR_3mer_counts, title = "AFR")
+
+b <- KG_vs_SGDP_propotion_scatter(KG_EUR_3mer_counts, EUR_3mer_counts, title = "EUR")
+
+c <- KG_vs_SGDP_propotion_scatter(KG_EAS_3mer_counts, EAS_3mer_counts, title = "EAS")
+
+d <- KG_vs_SGDP_propotion_scatter(KG_SAS_3mer_counts, SAS_3mer_counts, title = "SAS")
+
+grid.arrange(a,b,c,d, ncol = 2)
+```
+
+\pagebreak
+
+## Replication of Harris and Pritchard, figure 2
+
+Next we attempt to replicate figure 2 from Harris and Pritchard, 2017.  They first calculate the ratio of the proportion of each polymorphism in a pair of populations, then plot the agreement between the log (base $e$) of the ratios:
+
+![Figure 2 from KH JP.](KHJP_Fig2.jpg)
+
+```{r}
+#' @title: SGDP vs 1kg plot
+#' @decsription: replicates plots from figure 2 of Harris and Pritchard elife 2017
+#' @param: KG_POP1, KG_POP2, SGDP_POP1, SGDP_POP2.  Count dataframes from 2 pops in 1KG and SGDP
+SGDP_vs_KG_plot <- function(KG_POP1, KG_POP2, SGDP_POP1, SGDP_POP2, 
+                            title = "Agreement between SGDP and 1000G",
+                            label = F){
+  POP1_KG_proportion <- KG_POP1$Count/(sum(KG_POP1$Count))
+  POP2_KG_proportion <- KG_POP2$Count/(sum(KG_POP2$Count))
+  POP1_SGDP_proportion <- SGDP_POP1$Count/(sum(SGDP_POP1$Count))
+  POP2_SGDP_proportion <- SGDP_POP2$Count/(sum(SGDP_POP2$Count))
+  
+  plt_data <- data.frame(SGDP_log_ratio = log(POP1_SGDP_proportion/POP2_SGDP_proportion),
+                         KG_log_ratio = log(POP1_KG_proportion/POP2_KG_proportion),
+                         Onemer = KG_POP1$X1mer,
+                         Polymorphism = KG_POP1$Context) %>%
+    mutate(labels = ifelse((SGDP_log_ratio+KG_log_ratio)**2 > 0.04, as.character(Polymorphism), ""))
+  
+  p <- ggplot(plt_data, aes(x = KG_log_ratio, y = SGDP_log_ratio, color = Onemer)) +
+    geom_point(size = 0.5) +
+    theme(text = element_text(size=8))+
+    geom_abline(aes(intercept=0,slope=1), size = .25, linetype = 2) +
+    scale_color_manual(values=c("blue", "magenta", "black", "forestgreen","purple", "red")) +
+    labs(x = "Log Mutation type ratio (1000G)",
+         y = "Log Mutation type ratio (SGDP)", title = title)+
+    geom_hline(yintercept = 0, size = 0.25) + geom_vline(xintercept = 0, size = 0.25)
+  
+  if (label){
+    p <- p + geom_text_repel(aes(label = labels), size = 1.5, segment.size  = 0.2)
+  }
+  
+  return(p)
+}
+```
+
+Here is our attempt at the same plot: 
+
+```{r}
+a <- SGDP_vs_KG_plot(KG_EUR_3mer_counts, KG_AFR_3mer_counts, 
+                     EUR_3mer_counts, AFR_3mer_counts, title = "West Eurasia vs Africa", label = T)
+b <- SGDP_vs_KG_plot(KG_EUR_3mer_counts, KG_EAS_3mer_counts, 
+                     EUR_3mer_counts, EAS_3mer_counts, "West Eurasia vs East Asia", label = T)
+c <- SGDP_vs_KG_plot(KG_EAS_3mer_counts, KG_AFR_3mer_counts,
+                     EAS_3mer_counts, AFR_3mer_counts, "East Asia vs Africa", label = T)
+d <- SGDP_vs_KG_plot(KG_SAS_3mer_counts, KG_EAS_3mer_counts, 
+                     SAS_3mer_counts, EAS_3mer_counts, "South Asia vs East Asia", label = T)
+
+grid.arrange(a,b,c,d, ncol = 2)
+```
+
+\pagebreak
+
+Also included are two supplementary comparisons:
+
+![KH JP Figure 2S2](KHJP_Fig2S2.jpg)
+
+
+```{r, fig.height= 2}
+a <- SGDP_vs_KG_plot(KG_EUR_3mer_counts, KG_SAS_3mer_counts, 
+                     EUR_3mer_counts, SAS_3mer_counts, title = "West Eurasia vs South Asia", label = T)
+b <- SGDP_vs_KG_plot(KG_SAS_3mer_counts, KG_AFR_3mer_counts, 
+                     SAS_3mer_counts, AFR_3mer_counts, title = "South Asia vs Africa", label = T)
+
+grid.arrange(a,b, ncol = 2)
+```
+
+I make the following observations:
+
+1. The scales of the plots do not agree.  We have noted before that the trends and patterns we observe in polymorphism ratios between polymorphisms agree with Harris and Pritchard, but the exact numeric estimates do not.  It is not clear why this is.  One explanation may be that they use all polymorphism, but we use private variants only in our dataset.  Our approach may cause differences between populations to be larger than when their approach is used.
+
+2. Whenever we make a comparison with Africa, the figures do not agree.
+
+3. CAC -> C is consistently an outlier in comparisons with Africa.  Here are the rates in SGDP:
+
+```{r}
+gw_3mer_counts <- read_delim("gw_counts/gw_3mer_counts.txt", 
+                             "\t", escape_double = FALSE, trim_ws = TRUE)
+```
+
+
+```{r}
+#box plot of rate by chrom for a particular sequence context
+chrom.box <- function(AFR, EUR, EAS, SAS, gw, mut){
+  #get data
+  chrom.dat <- chrom.process.data(AFR, EUR, EAS, SAS, gw, mut)
+  
+  n <- nchar(mut)
+  ref <- substr(mut, 1, n-3)
+  alt <- substr(mut, n, n)
+  
+  #find outliers
+  AFR.rates <- subset(chrom.dat, chrom.dat$pop == "Africa")
+  AFR.outliers <- subset(AFR.rates, is_outlier(AFR.rates$rate)==TRUE)
+  EUR.rates <- subset(chrom.dat, chrom.dat$pop == "Europe")
+  EUR.outliers <- subset(EUR.rates, is_outlier(EUR.rates$rate)==TRUE)
+  EAS.rates <- subset(chrom.dat, chrom.dat$pop == "East\nAsia")
+  EAS.outliers <- subset(EAS.rates, is_outlier(EAS.rates$rate)==TRUE)
+  SAS.rates <- subset(chrom.dat, chrom.dat$pop == "South\nAsia")
+  SAS.outliers <- subset(SAS.rates, is_outlier(SAS.rates$rate)==TRUE)
+  
+  #plot
+  c_plot <- ggplot(chrom.dat, aes(pop, rate))+
+    geom_boxplot(outlier.color = NA, fill = c("palegreen1",  "steelblue1", 'plum1', "lightcoral"))+
+    labs(x = "\nPopulation", title = bquote("Mutation rate of" ~ .(ref)%->%.(alt) ~ "by chromosome"), y = NULL)+
+    scale_color_manual("", values = c("forest green", "dark blue", 'magenta', "red"))+
+    
+    #add outlier labels
+    geom_text(data = EUR.outliers, aes(pop, rate, label = chrom), color = "dark blue", nudge_x = 0.25)+
+    geom_text(data = AFR.outliers, aes(pop, rate, label = chrom), color = "forest green", nudge_x = 0.25)+
+    geom_text(data = EAS.outliers, aes(pop, rate, label = chrom), color = "red", nudge_x = 0.25)+
+    geom_text(data = SAS.outliers, aes(pop, rate, label = chrom), color = "magenta", nudge_x = 0.25)+
+    
+    #add points
+    geom_point(aes(color = factor(chrom.dat$pop)), size = 1.2, position = position_jitter(width = 0.1))+
+    theme(axis.text.x = element_text(size = rel(.9)), axis.title.x = element_blank(), #adjust text sizes
+          axis.title.y = element_text(size = rel(.9)), axis.text.y = element_text(size = rel(.9)),
+          legend.position = 'none',
+          title = element_text(size = rel(.7)))#legend position
+  return(c_plot)
+}
+
+#helper function for ploting which formats the data for ggplot
+chrom.process.data <- function(AFR, EUR, EAS, SAS, gw, mut){
+  #get indicies for mutation and contextAFR, EUR, EAS, SAS, gw, mut
+  i <- which(EUR$Context == mut)
+  cntxt <- substr(mut, 1, nchar(mut)-3)
+  i.cntxt <- which(gw$Context == cntxt)
+  col.e <- ncol(AFR)
+  col.s <- col.e-22
+  
+  #trim summary columns from each input dataframe
+  AFR <- AFR[c(col.s: col.e)]
+  EUR <- EUR[c(col.s: col.e)]
+  EAS <- EAS[c(col.s: col.e)]
+  SAS <- SAS[c(col.s: col.e)]
+  gw <- gw[-c(1,2)]
+  gw_totals <- colSums(gw)
+  
+  #make output dataframe for plot
+  dat <- data.frame(matrix(nrow = 23, ncol = 4))
+  colnames(dat) <- c("Africa", "Europe", "South\nAsia", "East\nAsia")  
+  
+  #get rates for each pop
+  dat$'Europe' <- t(EUR[i,]/gw[i.cntxt,]*1.2E-8*gw_totals/colSums(EUR))
+  dat$'Africa' <- t(AFR[i,]/gw[i.cntxt,]*1.2E-8*gw_totals/colSums(AFR))
+  dat$'East\nAsia' <- t(EAS[i,]/gw[i.cntxt,]*1.2E-8*gw_totals/colSums(EAS))
+  dat$'South\nAsia' <- t(SAS[i,]/gw[i.cntxt,]*1.2E-8*gw_totals/colSums(SAS))
+  
+  #melt data to necessary format
+  row.names(dat) <- c('1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21', '22', 'X')
+  dat.m <- melt(t(dat))
+  colnames(dat.m) <- c("pop", "chrom", "rate")
+  
+  return(dat.m)
+}
+
+#helper function that returns which elements of a vector x are outliers
+is_outlier <- function(x) {
+  return(x < quantile(x, 0.25) - 1.5 * IQR(x) | x > quantile(x, 0.75) + 1.5 * IQR(x))
+}
+
+CI.plot <- function(AFR, EUR, EAS, SAS, mut, small = F) {
+  n <- nchar(mut)
+  ref <- substr(mut, 1, n-3)
+  alt <- substr(mut, n, n)
+  mut.i <- which(AFR$Context == mut)
+  popnames <- c("AFR","EUR", "SAS", "EAS")
+  colors <- c("forestgreen", "darkblue", "magenta","red")
+  
+  #have to do a silly workaround or R will sort popnames alphanumerically
+  poplabs <- factor(popnames, levels= popnames)
+  
+  #cycle through pops and get counts for mut
+  counts <- rep(0, 4)
+  sums <- rep(0, 4)
+  pops <- list(AFR, EUR, SAS, EAS)
+  
+  for (i in 1:length(pops)){
+    counts[i] <- pops[[i]]$Count[mut.i]
+    sums[i]<- sum(pops[[i]]$Count)
+  }
+  
+  #estimate substitution probability
+  N.c <- AFR$context_in_genome[mut.i] 
+  theta <- counts/N.c
+  L <- theta - 1.96*sqrt(theta*(1-theta)/N.c)
+  U <- theta + 1.96*sqrt(theta*(1-theta)/N.c)
+  
+  #normalize to rate estimate; assume genome wide subsitution probability is measured without error
+  norm <- 1.2E-8*(sum(as.numeric(AFR$context_in_genome))/3)/sums
+  
+  df <- data.frame(cbind(popnames, theta*norm, L*norm, U*norm))
+  plotcol <- reorder(colors, theta*norm)
+  
+  CIplot <- ggplot(df, aes(reorder(popnames, c(1,2,3,4)), theta*norm)) +
+    geom_point(size = 2, color = plotcol) +
+    geom_errorbar(aes(ymax = U*norm, ymin = L*norm), color = plotcol, size =.75)+
+    labs(title = bquote(.(ref)%->%.(alt) ~ "mutation rate"), y = NULL) + #y axis label
+    theme(axis.text.x = element_text(size = rel(.7)), axis.title.x = element_blank(), #adjust text sizes
+          axis.title.y = element_text(size = rel(.7)), axis.text.y = element_text(size = rel(.7), angle = 0, hjust = 0.5), title = element_text(size = rel(.5)),
+          legend.position = 'none')
+  
+  if (small) {
+    CIplot <- CIplot + theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())+
+      labs(title = bquote(.(ref)%->%.(alt)))
+  }
+  
+  return(CIplot)
+}
+```
+
+
+```{r}
+d <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, mut = "CAC->C")
+e <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts,
+               gw_3mer_counts,"CAC->C")
+
+grid.arrange(d, e, ncol = 2)
+```
+
+And here they are in 1KG
+
+```{r}
+d <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, mut = "CAC->C")
+e <- chrom.box(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts,
+               gw_3mer_counts,"CAC->C")
+
+grid.arrange(d, e, ncol = 2)
+```
+
+Looking through Harris and Pritchard's figures, their relative rates for CAC->C are:
+
+
+EAS $\sim$ EUR > SAS > AFR.  
+
 
 # 3-mer Substitution Classes that Vary Across Continents
 
@@ -34,17 +341,6 @@ Here, we run the same p-ordered hypothesis test the we used on the 1,000 genomes
 To make this table, we need the following **functions** and *datasets*:
 
 * *3mer count dataframes for all ancestral continental groups*
-
-```{r F1BCD setup data}
-AFR_3mer_counts <- read_delim("3mer/SGDP_AFR_3mer_counts.txt", 
-                              "\t", escape_double = FALSE, trim_ws = TRUE)
-EUR_3mer_counts <- read_delim("3mer/SGDP_EUR_3mer_counts.txt", 
-                              "\t", escape_double = FALSE, trim_ws = TRUE)
-EAS_3mer_counts <- read_delim("3mer/SGDP_EAS_3mer_counts.txt", 
-                              "\t", escape_double = FALSE, trim_ws = TRUE)
-SAS_3mer_counts <- read_delim("3mer/SGDP_SAS_3mer_counts.txt", 
-                              "\t", escape_double = FALSE, trim_ws = TRUE)
-```
 
 * **Fourway.chi** Tests for heterogeneity among any four count dataframes
 * **ordered.p** performs ordered p value correction
@@ -153,11 +449,14 @@ o.p.3mer <- ordered.p(p.3mer)
 
 # Construct table 1
 rates <- cbind(AFR_3mer_counts$Rate, EUR_3mer_counts$Rate, SAS_3mer_counts$Rate, EAS_3mer_counts$Rate)
-table1 <- cbind(o.p.3mer$Context, rates/AFR_3mer_counts$Rate, o.p.3mer$p)
-colnames(table1)<- c("Context", "AFR relative rate", "EUR relative rate", "SAS relative rate", "EAS relative rate", "p")
+table1 <- data.frame(cbind(o.p.3mer$Context, rates/AFR_3mer_counts$Rate, o.p.3mer$p))
+colnames(table1)<- c("Context", "AFR_relative_rate", "EUR_relative_rate", "SAS_relative_rate", "EAS_relative_rate", "p")
 
 table1_SGDP <- filter(table1, Context %in% top_15_from_1kg) %>%
-  arrange(-p)
+  mutate("EUR_relative_rate" = round(as.numeric(as.character(EUR_relative_rate)), digits = 2),
+         EAS_relative_rate = round(as.numeric(as.character(EAS_relative_rate)), digits = 2),
+         SAS_relative_rate = round(as.numeric(as.character(SAS_relative_rate)), digits = 2)) %>%
+  arrange(as.numeric(as.character(p)))
 
 # show result
 kable(table1_SGDP, digits = 600, row.names = F,
@@ -310,6 +609,8 @@ b <- CI.plot.bygroup(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer
 
 s4 <-c("ACG->T", "CCG->T", "GCG->T", "TCG->T")
 d <- CI.plot.bygroup(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, s4, "profile #4")
+
+grid.arrange(a, b, d, ncol = 3)
 ```
 
 
