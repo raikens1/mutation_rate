@@ -34,7 +34,7 @@ for i in {1..22}; do
 	
 	JOB_NAME="${HANDLE}"
 	echo "${JOB_NAME}"
-	cmd="module load bcftools; bcftools view ${FILENAME} -S ../../AFR_1kg_overlap.txt -c 1 -Oz -o chr_${i}_AFR_subset.vcf.gz; tabix -p vcf chr_${i}_AFR_subset.vcf.gz"
+	cmd="module load bcftools; bcftools view ${FILENAME} -S ../../AFR_1kg_overlap.txt -c 2 -Oz -o chr_${i}_AFR_subset.vcf.gz; tabix -p vcf chr_${i}_AFR_subset.vcf.gz"
 	echo "${cmd}"
 
 	bsub -q voight_long -o "${JOB_NAME}".out -e "${JOB_NAME}".err "${cmd}"
