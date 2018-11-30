@@ -2,7 +2,10 @@
 title: "Replication in Simons Genome Diversity Project"
 author: "Rachael Caelie (Rocky) Aikens"
 date: "10/29/2018"
-output: pdf_document
+output: 
+  pdf_document:
+    toc: true
+    toc_depth: 2
 ---
 
 ```{r setup, include=FALSE}
@@ -22,11 +25,6 @@ require("ggrepel")
 theme_set(theme_light())
 ```
 
-# Introduction
-
-This document is meant to show all our efforts to replicate our study in the Simons Genome Diversity Project (SGDP).  Since SGDP dataset is much smaller than the 1,000 genomes dataset, extra care must be taken to conserve statistical power.  As a result, we will only replicate a subset of our discoveries from the main analysis, and restrict the number of hypothesis tests to a minimum where possible.
-
-# Preliminary Checks for Correctness
 
 ```{r 1kg setup data}
 KG_AFR_3mer_counts <- read_delim("3mer/AFR_3mer_counts.txt", 
@@ -40,7 +38,7 @@ KG_SAS_3mer_counts <- read_delim("3mer/SAS_3mer_counts.txt",
 ```
 
 ```{r SGDP setup data}
-AFR_3mer_counts <- read_delim("3mer/SGDP_AFR_3mer_counts.txt", 
+AFR_3mer_counts <- read_delim("3mer/SGDP_AFR_subset_3mer_counts.txt", 
                               "\t", escape_double = FALSE, trim_ws = TRUE)
 EUR_3mer_counts <- read_delim("3mer/SGDP_EUR_3mer_counts.txt", 
                               "\t", escape_double = FALSE, trim_ws = TRUE)
@@ -50,7 +48,35 @@ SAS_3mer_counts <- read_delim("3mer/SGDP_SAS_3mer_counts.txt",
                               "\t", escape_double = FALSE, trim_ws = TRUE)
 ```
 
-## Visualizing dataset agreement
+
+# Introduction
+
+This document is meant to show all our efforts to replicate our study in the Simons Genome Diversity Project (SGDP).  Since SGDP dataset is much smaller than the 1,000 genomes dataset, extra care must be taken to conserve statistical power.  As a result, we will only replicate a subset of our discoveries from the main analysis, and restrict the number of hypothesis tests to a minimum where possible.
+
+```{r}
+kable(data.frame(Study = c("1,000 Genomes", "SGDP"), 
+           Africans = c(504, 44), 
+           Europeans = c(503, 69),
+           "East Asians" = c(504,47),
+           "South Asians" = c(489, 39)), caption = "Sample sizes from 1,000 Genomes and SGDP")
+
+
+kable(data.frame(Study = c("1,000 Genomes", "SGDP"), 
+           Africans = c(sum(KG_AFR_3mer_counts$Count)/10^6, sum(AFR_3mer_counts$Count)/10^6), 
+           Europeans = c(sum(KG_EUR_3mer_counts$Count)/10^6, sum(EUR_3mer_counts$Count)/10^6),
+           "East Asians" = c(sum(KG_EAS_3mer_counts$Count)/10^6,sum(EAS_3mer_counts$Count)/10^6),
+           "South Asians" = c(sum(KG_SAS_3mer_counts$Count)/10^6, sum(SAS_3mer_counts$Count)/10^6)),
+      caption = "Variant counts from 1,000 Genomes and SGDP (millions)", digits=1)
+```
+
+
+\pagebreak
+
+# 0. Basic Checks of SGDP Data
+
+Here are some basic visualizations of the SGDP Data and their match up with 1KG and previous results.
+
+## 0.1 Visualizing dataset agreement
 
 Below is a simple visualization of agreement between the datasets.  For a given polymorphism $c$ and population $P$, the proportion of that polymorphism in the population is defined as:
 
@@ -67,7 +93,7 @@ KG_vs_SGDP_propotion_scatter <- function(KG, SGDP, title = "Proportions of mutat
     mutate(labels = ifelse(abs(SGDP_proportion-KG_proportion) > 0.001, as.character(Polymorphism), ""))
   ggplot(plt_data, aes(x = KG_proportion, y = SGDP_proportion, color = Onemer)) +
     geom_point(size = 0.25) +
-    theme(text = element_text(size=10))+
+    theme(text = element_text(size=10), legend.position = "None")+
     geom_abline(aes(intercept=0,slope=1), size = .5, linetype = 2) +
     scale_color_manual(values=c("blue", "magenta", "black", "forestgreen","purple", "red")) +
     labs(x = "Proportion of polymorphisms (1000G)",
@@ -90,9 +116,19 @@ grid.arrange(a,b,c,d, ncol = 2)
 
 \pagebreak
 
-## Replication of Harris and Pritchard, figure 2
+Qualitatively, there is relatively good agreement between the datasets.  A few differences are noticeable:
 
-Next we attempt to replicate figure 2 from Harris and Pritchard, 2017.  They first calculate the ratio of the proportion of each polymorphism in a pair of populations, then plot the agreement between the log (base $e$) of the ratios:
+1) There is a higher proportion of TCT$\rightarrow$T substitutions in SGDP than 1KG in all populations, especially Europeans.
+
+2) The following A$\rightarrow$T substitutions are more abundant in SGDP in all populations: AAA$\rightarrow$T, TAA$\rightarrow$T, TAT$\rightarrow$T, and (somewhat), AAT$\rightarrow$T.
+
+3) The following A$\rightarrow$C substitutions are more abundant in SGDP in Europe, East Asia, and South Asia: CAA$\rightarrow$C, AAA$\rightarrow$C, CAC$\rightarrow$C, and (somewhat) AAC$\rightarrow$C.  AAA$\rightarrow$C also may be slightly more abundant in Africa in SGDP than in 1KG.
+
+\pagebreak
+
+## 0.2 Agreement with Harris and Pritchard
+
+Next we attempt to replicate figure 2 from Harris and Pritchard, 2017 (above).  They first calculate the ratio of the proportion of each polymorphism in a pair of populations, then plot the agreement between the log (base $e$) of the ratios:
 
 ![Figure 2 from KH JP.](KHJP_Fig2.jpg)
 
@@ -164,19 +200,18 @@ grid.arrange(a,b, ncol = 2)
 
 I make the following observations:
 
-1. The scales of the plots do not agree.  We have noted before that the trends and patterns we observe in polymorphism ratios between polymorphisms agree with Harris and Pritchard, but the exact numeric estimates do not.  It is not clear why this is.  One explanation may be that they use all polymorphism, but we use private variants only in our dataset.  Our approach may cause differences between populations to be larger than when their approach is used.
+1. The scales of the plots do not agree.  We have noted before that the trends and patterns we observe in polymorphism ratios between polymorphisms agree with Harris and Pritchard, but the exact numeric estimates do not.  It is not clear why this is.  One explanation may be that they use all polymorphism, but we use private variants only in our dataset.  However, redoing the analysis with shared variants included does not fix the discrepancy.  It is possible (though unlikely) that Harris and Pritchard were using logarithm base 10 rather than the natural log to make these figures, which would explain a discrepancy by a factor of three. However, they state in their manuscript that the natural logarithm was used.
 
 2. Whenever we make a comparison with Africa, the figures do not agree.
 
 3. CAC -> C is consistently an outlier in comparisons with Africa.  Here are the rates in SGDP:
 
-```{r}
+```{r, fig.height=2}
 gw_3mer_counts <- read_delim("gw_counts/gw_3mer_counts.txt", 
                              "\t", escape_double = FALSE, trim_ws = TRUE)
 ```
 
-
-```{r}
+```{r, fig.height=2}
 #box plot of rate by chrom for a particular sequence context
 chrom.box <- function(AFR, EUR, EAS, SAS, gw, mut){
   #get data
@@ -307,8 +342,7 @@ CI.plot <- function(AFR, EUR, EAS, SAS, mut, small = F) {
 }
 ```
 
-
-```{r}
+```{r, fig.height=2}
 d <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, mut = "CAC->C")
 e <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts,
                gw_3mer_counts,"CAC->C")
@@ -318,7 +352,7 @@ grid.arrange(d, e, ncol = 2)
 
 And here they are in 1KG
 
-```{r}
+```{r, fig.height=2}
 d <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, mut = "CAC->C")
 e <- chrom.box(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts,
                gw_3mer_counts,"CAC->C")
@@ -328,22 +362,15 @@ grid.arrange(d, e, ncol = 2)
 
 Looking through Harris and Pritchard's figures, their relative rates for CAC->C are:
 
-
 EAS $\sim$ EUR > SAS > AFR.  
 
+\pagebreak
 
-# 3-mer Substitution Classes that Vary Across Continents
+# 1. 3-mer Substitution Classes that Vary Across Continents
 
-## Test for Homogenity Across all Continental Groups
+## 1.1 Test for Homogenity Across all Continental Groups
 
-Here, we run the same p-ordered hypothesis test the we used on the 1,000 genomes dataset.  However, we will test for the significance of variation in the top 15 polymorphism classes listed in Table 1.
-
-To make this table, we need the following **functions** and *datasets*:
-
-* *3mer count dataframes for all ancestral continental groups*
-
-* **Fourway.chi** Tests for heterogeneity among any four count dataframes
-* **ordered.p** performs ordered p value correction
+Here, we run the same p-ordered hypothesis test the we used on the 1,000 genomes dataset.  However, rather than run the test for all 96 threemer contexts, we will avoid the multiple testing burden by testing for the significance of variation in only the top 15 polymorphism classes listed in Table 1.
 
 ```{r T1 setup methods}
 # calculates homogeneity test p values for Fourway comparisons of counts dfs
@@ -463,7 +490,15 @@ kable(table1_SGDP, digits = 600, row.names = F,
       caption = "Replication of Table 1 with data from SGDP")
 ```
 
-## Inferred Mutation Rate in top 15 Heterogeneous 3-mers
+All p-values are nominally significant.  In addition, the relative infered mutation rates agree for many polymorphism types, with some exceptions:
+
+```{r, eval = FALSE}
+data.frame(Context = table1_SGDP$Context,
+           "1KG relationship", 
+           "SGDP relationship", 
+           "Agreement")
+```
+
 
 Here, we will calculate the inferred mutation rate of the 3-mers from table 1.
 
@@ -546,6 +581,28 @@ o <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts,
 
 grid.arrange(a,b,c,d,e,f,g,blank, h,i,j,k,l,m,n,o, ncol = 4)
 ```
+
+```{r S2 make figure KG, fig.height = 8, fig.width=7}
+a <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "TCC->T", small = F)
+b <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "ACC->T", small = F)
+c <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "TCT->T", small = F)
+d <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "CCC->T", small = F)
+e <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "TCA->T", small = F)
+f <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "ACT->T", small = F)
+g <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "GCC->T", small = F)
+h <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "GAT->T", small = F)
+i <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "ACC->A", small = F)
+j <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "GCT->T", small = F)
+k <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "GAC->T", small = F)
+l <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "TCG->T", small = F)
+m <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "ACG->T", small = F)
+n <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "GCG->T", small = F)
+o <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "ACA->T", small = F)
+
+grid.arrange(a,b,c,d,e,f,g,blank, h,i,j,k,l,m,n,o, ncol = 4)
+```
+
+\pagebreak
 
 ## Signatures of Variation at the 3-mer Level
 
