@@ -9,7 +9,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, fig.align = "center")
 knitr::opts_knit$set(root.dir = '../../data')
 
 library(ggplot2)
@@ -38,7 +38,7 @@ KG_SAS_3mer_counts <- read_delim("3mer/SAS_3mer_counts.txt",
 ```
 
 ```{r SGDP setup data}
-AFR_3mer_counts <- read_delim("3mer/SGDP_AFR_subset_3mer_counts.txt", 
+AFR_3mer_counts <- read_delim("3mer/SGDP_AFR_3mer_counts.txt", 
                               "\t", escape_double = FALSE, trim_ws = TRUE)
 EUR_3mer_counts <- read_delim("3mer/SGDP_EUR_3mer_counts.txt", 
                               "\t", escape_double = FALSE, trim_ws = TRUE)
@@ -124,13 +124,51 @@ Qualitatively, there is relatively good agreement between the datasets.  A few d
 
 3) The following A$\rightarrow$C substitutions are more abundant in SGDP in Europe, East Asia, and South Asia: CAA$\rightarrow$C, AAA$\rightarrow$C, CAC$\rightarrow$C, and (somewhat) AAC$\rightarrow$C.  AAA$\rightarrow$C also may be slightly more abundant in Africa in SGDP than in 1KG.
 
+However, when we plot the agreement in mutation rate, it is immediately evident that the inferred private mutation rates of CpGs are much lower in SGDP than in 1KG in all populations except Africa
+
+```{r}
+KG_vs_SGDP_rate_scatter <- function(KG, SGDP, title = "Proportions of mutations"){
+  plt_data <- data.frame(KG_rate = KG$Rate,
+                         SGDP_rate = SGDP$Rate,
+                         Onemer = KG$X1mer,
+                         Polymorphism = KG$Context) %>%
+    mutate(labels = ifelse(abs(SGDP_rate-KG_rate) > 01e-9, as.character(Polymorphism), ""))
+  ggplot(plt_data, aes(x = KG_rate, y = SGDP_rate, color = Onemer)) +
+    geom_point(size = 0.25) +
+    theme(text = element_text(size=10), legend.position = "None")+
+    geom_abline(aes(intercept=0,slope=1), size = .5, linetype = 2) +
+    scale_color_manual(values=c("blue", "magenta", "black", "forestgreen","purple", "red")) +
+    labs(x = "Private mutation rate (1000G)",
+         y = "Private mutation rate (SGDP)", title = title) +
+    geom_text_repel(aes(label = labels), size = 1.5, segment.size  = 0.2)
+}
+```
+
+```{r, fig.height = 6}
+a <- KG_vs_SGDP_rate_scatter(KG_AFR_3mer_counts, AFR_3mer_counts, title = "AFR")
+
+b <- KG_vs_SGDP_rate_scatter(KG_EUR_3mer_counts, EUR_3mer_counts, title = "EUR")
+
+c <- KG_vs_SGDP_rate_scatter(KG_EAS_3mer_counts, EAS_3mer_counts, title = "EAS")
+
+d <- KG_vs_SGDP_rate_scatter(KG_SAS_3mer_counts, SAS_3mer_counts, title = "SAS")
+
+grid.arrange(a,b,c,d, ncol = 2)
+```
+
 \pagebreak
 
 ## 0.2 Agreement with Harris and Pritchard
 
 Next we attempt to replicate figure 2 from Harris and Pritchard, 2017 (above).  They first calculate the ratio of the proportion of each polymorphism in a pair of populations, then plot the agreement between the log (base $e$) of the ratios:
 
-![Figure 2 from KH JP.](KHJP_Fig2.jpg)
+```{r}
+include_graphics("KHJP_Fig2.jpg")
+```
+
+**Note: Harris and Pritchard project the site frequency spectrum of the 1,000 genomes dataset onto the sample size of SGDP.**  It is not clear to me how this would change the results.  We do not take this extra step.
+
+\pagebreak
 
 ```{r}
 #' @title: SGDP vs 1kg plot
@@ -152,7 +190,7 @@ SGDP_vs_KG_plot <- function(KG_POP1, KG_POP2, SGDP_POP1, SGDP_POP2,
   
   p <- ggplot(plt_data, aes(x = KG_log_ratio, y = SGDP_log_ratio, color = Onemer)) +
     geom_point(size = 0.5) +
-    theme(text = element_text(size=8))+
+    theme(text = element_text(size=8), legend.position = "None")+
     geom_abline(aes(intercept=0,slope=1), size = .25, linetype = 2) +
     scale_color_manual(values=c("blue", "magenta", "black", "forestgreen","purple", "red")) +
     labs(x = "Log Mutation type ratio (1000G)",
@@ -169,7 +207,7 @@ SGDP_vs_KG_plot <- function(KG_POP1, KG_POP2, SGDP_POP1, SGDP_POP2,
 
 Here is our attempt at the same plot: 
 
-```{r}
+```{r, fig.height = 5.5}
 a <- SGDP_vs_KG_plot(KG_EUR_3mer_counts, KG_AFR_3mer_counts, 
                      EUR_3mer_counts, AFR_3mer_counts, title = "West Eurasia vs Africa", label = T)
 b <- SGDP_vs_KG_plot(KG_EUR_3mer_counts, KG_EAS_3mer_counts, 
@@ -186,10 +224,11 @@ grid.arrange(a,b,c,d, ncol = 2)
 
 Also included are two supplementary comparisons:
 
-![KH JP Figure 2S2](KHJP_Fig2S2.jpg)
+```{r}
+include_graphics("KHJP_Fig2S2.jpg")
+```
 
-
-```{r, fig.height= 2}
+```{r, fig.height= 3}
 a <- SGDP_vs_KG_plot(KG_EUR_3mer_counts, KG_SAS_3mer_counts, 
                      EUR_3mer_counts, SAS_3mer_counts, title = "West Eurasia vs South Asia", label = T)
 b <- SGDP_vs_KG_plot(KG_SAS_3mer_counts, KG_AFR_3mer_counts, 
@@ -206,12 +245,12 @@ I make the following observations:
 
 3. CAC -> C is consistently an outlier in comparisons with Africa.  Here are the rates in SGDP:
 
-```{r, fig.height=2}
+```{r}
 gw_3mer_counts <- read_delim("gw_counts/gw_3mer_counts.txt", 
                              "\t", escape_double = FALSE, trim_ws = TRUE)
 ```
 
-```{r, fig.height=2}
+```{r}
 #box plot of rate by chrom for a particular sequence context
 chrom.box <- function(AFR, EUR, EAS, SAS, gw, mut){
   #get data
@@ -342,7 +381,7 @@ CI.plot <- function(AFR, EUR, EAS, SAS, mut, small = F) {
 }
 ```
 
-```{r, fig.height=2}
+```{r, fig.height=2, fig.width = 4, fig.align = "center"}
 d <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, mut = "CAC->C")
 e <- chrom.box(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts,
                gw_3mer_counts,"CAC->C")
@@ -352,7 +391,7 @@ grid.arrange(d, e, ncol = 2)
 
 And here they are in 1KG
 
-```{r, fig.height=2}
+```{r, fig.height=2, fig.width = 4, fig.align="center"}
 d <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, mut = "CAC->C")
 e <- chrom.box(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts,
                gw_3mer_counts,"CAC->C")
@@ -366,9 +405,39 @@ EAS $\sim$ EUR > SAS > AFR.
 
 \pagebreak
 
-# 1. 3-mer Substitution Classes that Vary Across Continents
+## 0.3 Sample sizes Under the 7-mer model
 
-## 1.1 Test for Homogenity Across all Continental Groups
+```{r load 7mer data}
+AFR_7mer_counts <- read.delim('7mer/SGDP_AFR_7mer_counts.txt')
+EUR_7mer_counts <- read.delim('7mer/SGDP_EUR_7mer_counts.txt')
+EAS_7mer_counts <- read.delim('7mer/SGDP_EAS_7mer_counts.txt')
+SAS_7mer_counts <- read.delim('7mer/SGDP_SAS_7mer_counts.txt')
+
+gw_7mer_counts <- read_delim("gw_counts/gw_7mer_counts.txt", 
+                             "\t", escape_double = FALSE, trim_ws = TRUE)
+```
+
+Before attempting to replicate any 7-mer analyses, we can first consider how many polymorphisms we have for each 7mer type in SGDP.  Below are histograms of the number of observed polymorphisms for each of the 24,576 7-mer polymorphism classes. *Note that the x axis is on a log base 10 scale*. Africa and South Asia are shown as examples because they have the largest and smallest number of variants, respectively
+
+```{r, fig.height = 2}
+ggplot(data = AFR_7mer_counts, aes(x = Count)) + geom_histogram() +
+  scale_x_log10() +
+  labs(title = "Africa", x = "Number of Observed Polymorphisms")
+
+ggplot(data = SAS_7mer_counts, aes(x = Count)) + geom_histogram() +
+  scale_x_log10() +
+  labs(title = "South Asia", x = "Number of Observed Polymorphisms")
+```
+
+Clearly, while some 7-mers are fairly well-represented (>1000 polymorphisms), many are not (<100 polymorphisms). For these reasons be must be extra cautious when considering power.
+
+\pagebreak
+
+# 1. Identifying novel 3-mer substitution classes that vary across continents
+
+The major result for this section is Table 1, with supplementary figures 2 and 3.  They are recapitulated below.
+
+## 1.1 Test for homogenity across all continental groups (table 1)
 
 Here, we run the same p-ordered hypothesis test the we used on the 1,000 genomes dataset.  However, rather than run the test for all 96 threemer contexts, we will avoid the multiple testing burden by testing for the significance of variation in only the top 15 polymorphism classes listed in Table 1.
 
@@ -464,10 +533,10 @@ pairwise.op <- function(pdata){
 ```
 
 ```{r run tests}
-top_15_from_1kg <- c("TCC->T", "ACC->T", "TCT->T",
-                     "GAT->T", "ACC->A", "CCC->T",
+top_15_from_1kg <- c("TCC->T", "ACC->T", "TCT->T","CCC->T",
+                       "TCG->T", "ACG->T", "GCG->T",
+                     "GAT->T", "ACC->A", 
                      "ACA->T", "TCA->T", "ACT->T",
-                     "TCG->T", "ACG->T", "GCG->T",
                      "GCT->T", "GAC->T", "GCC->T")
 
 # calculate ordered p values
@@ -486,21 +555,41 @@ table1_SGDP <- filter(table1, Context %in% top_15_from_1kg) %>%
   arrange(as.numeric(as.character(p)))
 
 # show result
-kable(table1_SGDP, digits = 600, row.names = F,
+kable(table1_SGDP[match(top_15_from_1kg, table1_SGDP$Context),], digits = 600, row.names = F,
       caption = "Replication of Table 1 with data from SGDP")
 ```
 
-All p-values are nominally significant.  In addition, the relative infered mutation rates agree for many polymorphism types, with some exceptions:
+All p-values are nominally significant.  In addition, the relative infered mutation rates agree for many polymorphism types, with some exceptions. Agreements and discrepancies are listed below:
 
-```{r, eval = FALSE}
-data.frame(Context = table1_SGDP$Context,
-           "1KG relationship", 
-           "SGDP relationship", 
-           "Agreement")
+```{r, eval = TRUE}
+kable(data.frame(Context = c("TCC->T", "ACC->T", "TCT->T","CCC->T",
+                       "TCG->T", "ACG->T", "GCG->T",
+                     "GAT->T", "ACC->A", 
+                     "ACA->T", "TCA->T", "ACT->T",
+                     "GCT->T", "GAC->T", "GCC->T"),
+           Agreement = c("Agree", "Mostly Agree", "Mostly Agree", "Agree", 
+                           "Disagree", "Mostly Disagree", "Mostly Disagree",
+                           "Agree", "Agree", 
+                           "Mostly Agree", "Somewhat Agree", "Somewhat Agree", 
+                           "Disagree", "Agree", "Somewhat Agree"), 
+           Discrepancies = c("", "SAS, AFR relationship","EAS, AFR relationship","",
+                             "Completely different", "AFR high in SGDP", "AFR high in SGDP",
+                             "", "",
+                             "EUR, SAS relationship", "AFR high in SGDP", "AFR high in SGDP",
+                             "Completely different", "", "AFR high in SGDP"),
+           Notes = c("Prev. Reported C->T in EUR", "Prev. Reported C->T in EUR","Prev. Reported C->T in EUR","Prev. Reported C->T in EUR",
+                     "CpG","CpG","CpG",
+                     "Not previously reported; Signature 2", "Not previously reported; Signature 2", 
+                     "Not previously reported; Not in a signature", "Not previously reported; Signature 1", "Not previously reported; Signature 1",
+                     "Not previously reported; Not in a signature", "Not previously reported; Signature 2", 
+                     "Not previously reported; Signature 1")))
 ```
 
+## 1.2 Inferred rates of top 15 3mers (supplementary figure 2)
 
-Here, we will calculate the inferred mutation rate of the 3-mers from table 1.
+To better visualize the differences between datasets, here are the inferred relative rates of the substitutions from the tables in the section above.
+
+### Relative Rates in SGDP
 
 ```{r load gw_3mer_counts }
 gw_3mer_counts <- read_delim("gw_counts/gw_3mer_counts.txt", 
@@ -582,6 +671,8 @@ o <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts,
 grid.arrange(a,b,c,d,e,f,g,blank, h,i,j,k,l,m,n,o, ncol = 4)
 ```
 
+### Relative Rates in 1KG
+
 ```{r S2 make figure KG, fig.height = 8, fig.width=7}
 a <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "TCC->T", small = F)
 b <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "ACC->T", small = F)
@@ -602,15 +693,36 @@ o <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_
 grid.arrange(a,b,c,d,e,f,g,blank, h,i,j,k,l,m,n,o, ncol = 4)
 ```
 
+
 \pagebreak
 
-## Signatures of Variation at the 3-mer Level
+For completenes, below are the CI plots for the last CpG 3-mer, CCG$\rightarrow$T (1kg on the right, SGDP on the left).  They also do not agree.
 
-We will not attempt to construct a heatmap of the 3-mer signatures from the SGDP data, since this analysis on 1,000 genomes was mostly heuristic.  However, we will plot the inferred mutation rate from SGDP for each of the signatures reported in figure 1.
+```{r}
+q1 <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "CCG->T", small = F)
 
-To make these panels, I need the following **functions** and *datasets*:
+q2 <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "CCG->T", small = F)
 
-* **CI.plot.bygroup** Makes a plot of the rates of a group of mutations.  Will bug out if the mutations are of the same context, although that's not a problem for these figures.
+grid.arrange(q2, q1, ncol = 2)
+```
+
+
+## 1.3 Summary
+
+Most of the 3-mers from table 1 appear acceptably similar between SGDP and 1KG, allowing for some expected differences based on sampling and data collection discrepansies.  The notable exceptions are (1) all three CpGs, and (2) GCT$\rightarrow$T.  GCT$\rightarrow$ T is not in any signature discribed in results section 2, however in 1kg it does resemble signature 2.
+
+It is additionally is worth noting that while the approximate ranges of inferred mutation rate do agree between datasets, the actual numbers do not (see CI plots of inferred mutation rate, above).  In general, when the rates disagree, African mutation rates in SGDP are closer to those in 1kg, while the mutation rates in the other populations are more discordant.
+
+\pagebreak
+
+
+# 2. Heirarchical Clustering of 3-mer signatures
+
+The primary result of this section of the paper was the heirarchical heatmap and the plots of mutation rate by signature.  We will not attempt to construct a heatmap of the 3-mer signatures from the SGDP data, since this analysis on 1,000 genomes was mostly heuristic.  However, we will plot the inferred mutation rate from SGDP for each of the signatures reported in figure 1.
+
+## 2.1 Signatures 1-4
+
+### Mutational Signatures in SGDP
 
 ```{r F1BCD setup methods}
 CI.plot.bygroup <- function(AFR, EUR, EAS, SAS, muts, groupname = "mutation group") {
@@ -664,47 +776,119 @@ a <- CI.plot.bygroup(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer
 s2 <- c("GAT->T", "ACC->A", "GAC->T")
 b <- CI.plot.bygroup(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, s2, "profile #2")
 
+s3 <-c("CAC->C", "TAT->T", "GAC->C", "AAC->C", "TAC->C")
+c <- CI.plot.bygroup(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, s3, "profile #3")
+
 s4 <-c("ACG->T", "CCG->T", "GCG->T", "TCG->T")
 d <- CI.plot.bygroup(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, s4, "profile #4")
 
-grid.arrange(a, b, d, ncol = 3)
+grid.arrange(a, b, c, d, ncol = 4)
 ```
 
+### Mutational Signatures in 1kg
 
-# Broader Sequence Contexts of 3-mer Signatures
+```{r F1BCD make KG, fig.height=2.5, fig.width=6.5}
+s1 <- c("TCT->T", "ACC->T", "TCA->T", "CCC->T", "ACT->T", "TCC->T", "GCC->T")
+a <- CI.plot.bygroup(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, s1, "profile #1")
 
-We will not attempt to replicate scatter plots as in Figure 2 because it is not likely that inferred mutation rate for 7-mers in SGDP will be accurate enough for these plots to be meaningful.  Likewise, the suggestion that certain 7-mers are driving the *AC$\rightarrow$C enrichment in Japan compared to East Asia is an interesting result, but since there are 5 Chinese Dai and 3 Japanese individuals in SGDP, attempting to replicate this result may not be appropriate.  Ideally, this preliminary finding could be replicated and perhaps further explored in a large Asian genomic dataset, the likes of which, to our knowledge, are currently not publically available.
+s2 <- c("GAT->T", "ACC->A", "GAC->T")
+b <- CI.plot.bygroup(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, s2, "profile #2")
 
-# Signatures of Variation at Broader Sequence Contexts
+s3 <-c("CAC->C", "TAT->T", "GAC->C", "AAC->C", "TAC->C")
+c <- CI.plot.bygroup(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, s3, "profile #3")
+
+s4 <-c("ACG->T", "CCG->T", "GCG->T", "TCG->T")
+d <- CI.plot.bygroup(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, s4, "profile #4")
+
+grid.arrange(a, b, c, d, ncol = 4)
+```
+
+\pagebreak
+
+## 2.2 Signature 5:CpG transversions
+
+We originally excluded signature 5 (CpG transversions) because Harris and Pritchard reported that the ratios of enrichment of CpG transversions do not agree between 1,000 genomes and SGDP.  Since we now have an analysis of SGDP, we can compare this signature between datasets ourselves:
+
+First, here are plots of rate for each of the subcontexts:
+
+**In SGDP:**
+
+```{r, fig.height= 2}
+l <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "GCG->G", small = F)
+m <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "ACG->G", small = F)
+n <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "CCG->A", small = F)
+o <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "ACG->A", small = F)
+
+grid.arrange(l,m,n,o, ncol = 4)
+```
+
+Frankly, these just seem noisy.  This could be because transitions at CpG sites are rare.
+
+**In 1,000 genomes:**
+
+```{r, fig.height = 2}
+l <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "GCG->G", small = F)
+m <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "ACG->G", small = F)
+n <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "CCG->A", small = F)
+o <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "ACG->A", small = F)
+
+grid.arrange(l,m,n,o, ncol = 4)
+```
+
+**Pooled signature:**
+
+Second, we can look at the CI plot for the whole signature (SGDP on the left, 1KG on the right):
+
+```{r, fig.height=3, fig.width=5, fig.align="center"}
+s5 <-c("ACG->G", "CCG->A", "GCG->A", "ACG->A")
+
+e1 <- CI.plot.bygroup(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, s5, "profile #5")
+
+e2 <- CI.plot.bygroup(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, s5, "profile #5")
+
+grid.arrange(e1, e2, ncol = 2)
+```
+
+\pagebreak
+
+## 2.3 Summary
+
+Signature 1 (known C$\rightarrow$T), 2 (new Asia enriched), and 3 (*AC$\rightarrow$C Japan enriched) appear to replicate.  Signature 4 (CpGs) does not.  The rates of CpG mutation we estimate from SGDP are much lower than in 1KG; it is not clear why.  Here are all the previous analyses of CpGs I know of:
+
+1) Harris and Pritchard:  Not all comparisons involving each CpG is significant.  The patterns of depletion and enrichment disagree slightly between (a) 1,000 genomes, (b) SGDP, and (c) 1,000 genomes projected onto the sample size of SGDP.  For example, in (a) all CpGs are significantly *depleted* in Europe relative to East Asia while in (b) two CpGs are significantly *enriched* in Europe relative to East Asia. In (b) and (c) Africa appears to have the highest rate of CpGs, while in (a) some CpGs are enriched in East Asia relative to Africa. In part, their analysis in 1kg and SGDP agree with ours, although it is difficult to tell precisely because of differences in our visualizations.
+
+2) Mathieson and Reich also report a CpG signature, enriched in Native American populations in SGDP.  However, they conclude that this signature is driven by recent population increase, rather than a change in the underlying mutation rate. They add that because the rate of CpG mutation is so much higher than most, this mutation type is more sensitive to differences in demographic history between populations. Although this is not explicitly reported, their plot of enrichment for this signature (signature 2, below) appears depleted in Africa.  (This is confusing because Harris and Pritchards analaysis of SGDP and our own found CpGs enriched in Africa.)
+
+```{r}
+include_graphics("IMDR_Fig1B.png")
+```
+
+# 3. Broader Sequence Contexts of 3-mer Signatures
+
+We will not attempt to replicate scatter plots as in Figure 2 because it is not likely that inferred mutation rate for 7-mers in SGDP will be accurate enough for these plots to be meaningful (See Section 0.3).  Likewise, the suggestion that certain 7-mers are driving the *AC$\rightarrow$C enrichment in Japan compared to East Asia is an interesting result, but since there are 5 Chinese Dai and 3 Japanese individuals in SGDP, attempting to replicate this result may not be appropriate.  Ideally, this preliminary finding could be replicated and perhaps further explored in a large Asian genomic dataset, the likes of which, to our knowledge, are currently not publically available.
+
+# 4. Signatures of Variation at Broader Sequence Contexts
 
 We will not attempt hypothesis testing across all 5-mer and 7-mer polymorphism classes, since many of these tests are sure to invlolve too few observations to be carried out, and the hypothesis testing burden would massively reduce statistical power.  Rather, we will repeat the hypothesis tests for only the 7-mer classes shown in table 3.
-
-```{r load 7mer data}
-AFR_7mer_counts <- read.delim('7mer/AFR_7mer_counts.txt')
-EUR_7mer_counts <- read.delim('7mer/EUR_7mer_counts.txt')
-EAS_7mer_counts <- read.delim('7mer/EAS_7mer_counts.txt')
-SAS_7mer_counts <- read.delim('7mer/SAS_7mer_counts.txt')
-
-gw_7mer_counts <- read_delim("gw_counts/gw_7mer_counts.txt", 
-                             "\t", escape_double = FALSE, trim_ws = TRUE)
-```
 
 ```{r}
 table_3_7mers <- c("CAAACCC->C", "TTTATTT->T", "TTTAAAA->T", "ATTAAAA->T", "AAACAAA->A")
 
 # calculate ordered p values
 p.7mer <- fourway.chi(AFR_7mer_counts, EUR_7mer_counts, EAS_7mer_counts, SAS_7mer_counts)
-o.p.7mer <- ordered.p(p.7mer)
+o.p.7mer <- ordered.p(p.7mer, filter = F)
 
-# extract significantly variable mutation types and order by p value
-rates <- cbind(AFR_7mer_counts$Rate, EUR_7mer_counts$Rate, SAS_7mer_counts$Rate, EAS_7mer_counts$Rate)
-table3 <- cbind(o.p.7mer$Context, rates/AFR_7mer_counts$Rate, o.p.7mer$p)
-colnames(table3)<- c("Context", "AFR relative rate", "EUR relative rate", "SAS relative rate", "EAS relative rate", "p")
+rates <- data.frame(Context = AFR_7mer_counts$Context, 
+           "AFR relative rate" = rep(1, 24576),
+           "EUR relative rate" = round(EUR_7mer_counts$Rate/AFR_7mer_counts$Rate, digits = 2),
+           "SAS relative rate" = round(SAS_7mer_counts$Rate/AFR_7mer_counts$Rate, digits = 2),
+           "EAS relative rate" = round(EAS_7mer_counts$Rate/AFR_7mer_counts$Rate, digits = 2))
 
-table3_SGDP <- filter(table1, Context %in% table_3_7mers) %>%
-  arrange(-p)
+table_3 <- left_join(rates, o.p.7mer) %>% 
+  select(c(Context, AFR.relative.rate, EUR.relative.rate, SAS.relative.rate, EAS.relative.rate, p)) %>%
+  filter(Context %in% table_3_7mers)
 
-kable(table3_SGDP, digits = 600, row.names = F,
+kable(table_3, digits = 600, row.names = F,
       caption = "Table 3 recalculated with SGDP data")
 ```
 
