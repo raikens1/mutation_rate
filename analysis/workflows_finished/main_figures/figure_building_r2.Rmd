@@ -27,7 +27,7 @@ require("ggrepel")
 
 To make this table, we need the following **functions** and *datasets*:
 
-* *3mer count dataframes for all ancestral continental groups*
+* *3mer count dataframes for all ancestral continental groups, in 1,000 genomes and SGDP*
 
 ```{r F1BCD setup data}
 AFR_3mer_counts <- read_delim("3mer/AFR_3mer_counts.txt", 
@@ -37,6 +37,15 @@ EUR_3mer_counts <- read_delim("3mer/EUR_3mer_counts.txt",
 EAS_3mer_counts <- read_delim("3mer/EAS_3mer_counts.txt", 
                               "\t", escape_double = FALSE, trim_ws = TRUE)
 SAS_3mer_counts <- read_delim("3mer/SAS_3mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+
+SGDP_AFR_3mer_counts <- read_delim("3mer/SGDP_AFR_3mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+SGDP_EUR_3mer_counts <- read_delim("3mer/SGDP_EUR_3mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+SGDP_EAS_3mer_counts <- read_delim("3mer/SGDP_EAS_3mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+SGDP_SAS_3mer_counts <- read_delim("3mer/SGDP_SAS_3mer_counts.txt", 
                               "\t", escape_double = FALSE, trim_ws = TRUE)
 ```
 
@@ -168,23 +177,30 @@ pairwise.chi <- function(counts.1, counts.2, filter = T){
 ```
 
 
-```{r F4A make1}
-# calculate ordered p values
-p.3mer <- fourway.chi(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts)
-o.p.3mer <- ordered.p(p.3mer)
+```{r Table1 make1}
+# calculate ordered p valuesn in KG and SGDP
+o.p.3mer <- fourway.chi(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts) %>%
+  ordered.p()
 
-# extract significantly variable mutation types and order by p value
-alpha <- 0.05/length(o.p.3mer$Context)
+# create rate table and order by p value
 rates <- cbind(AFR_3mer_counts$Rate, EUR_3mer_counts$Rate, SAS_3mer_counts$Rate, EAS_3mer_counts$Rate)
-table1 <- cbind(o.p.3mer$Context, rates/AFR_3mer_counts$Rate, o.p.3mer$p)
+rate_table <- cbind(o.p.3mer$Context, round(rates/AFR_3mer_counts$Rate, digits = 2), o.p.3mer$p)
+rate_table <- rate_table[order(o.p.3mer$p),]
 
-table1 <- table1[order(o.p.3mer$p),]
-colnames(table1)<- c("Context", "AFR relative rate", "EUR relative rate", "SAS relative rate", "EAS relative rate", "p")
-table1 <- head(table1, 15)
+
+# load reference dataframe of SGDP replication
+SGDP_KG_Agreement <-read_delim("SGDP_KG_Agreement_table.txt", ",", escape_double = FALSE, trim_ws = TRUE)
+
+# join withg reference and show top 15 replicated results
+table1 <- left_join(data.frame(rate_table), SGDP_KG_Agreement, by = c("X1" = "Context")) %>% 
+  filter(Agreement %in% c("Agree", "Agree Mostly", "Agree Somewhat")) %>%
+  head(n = 14) %>% dplyr::select(-c(X6, Agreement, Notes))
+
+colnames(table1)<- c("Context", "AFR relative rate", "EUR relative rate", "SAS relative rate", "EAS relative rate", "p (1,000 genomes)", "p (SGDP)")
 
 # plot significant 7mers and print most signif. new results
 kable(table1, digits = 600, row.names = F,
-      caption = "15 most significant 3mers using ordered p value correction")
+      caption = "14 most significant 3mers using ordered p value correction")
 ```
 
 Certain table entries are bold if they are significantly enriched in Africa.  The code below calculates which threemers are significantly different (p<1e-5) between AFR and EUR in table 1.
@@ -270,7 +286,7 @@ make.heatmap <- function(data, logunits = T){
   dr.ordered <- reorder(as.dendrogram(dr), wts = weights.dr, agglo.FUN = mean)
   
   heatmap.2(data, Rowv = dr.ordered, Colv = as.dendrogram(dc),
-            trace = 'none', col=colorRampPalette(c('blue', "white", 'red'))(n = 1000), #to remove row names, add, "labRow = T"
+            trace = 'none', col=colorRampPalette(c('blue', "white", 'red'))(n = 1000), labRow = T, #to remove row names, add, "labRow = T"
             density.info = 'none', key.xlab = "fold differece vs. mean\n(log base 2 scale)",
             key.title = NA, keysize = 0.5, key.par = list(cex=0.65),
             lhei = c(1,5.5), lwid = c(1,4))

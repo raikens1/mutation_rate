@@ -408,6 +408,12 @@ EAS $\sim$ EUR > SAS > AFR.
 ## 0.3 Sample sizes Under the 7-mer model
 
 ```{r load 7mer data}
+KG_AFR_7mer_counts <- read.delim('7mer/AFR_7mer_counts.txt')
+KG_EUR_7mer_counts <- read.delim('7mer/EUR_7mer_counts.txt')
+KG_EAS_7mer_counts <- read.delim('7mer/EAS_7mer_counts.txt')
+KG_SAS_7mer_counts <- read.delim('7mer/SAS_7mer_counts.txt')
+
+
 AFR_7mer_counts <- read.delim('7mer/SGDP_AFR_7mer_counts.txt')
 EUR_7mer_counts <- read.delim('7mer/SGDP_EUR_7mer_counts.txt')
 EAS_7mer_counts <- read.delim('7mer/SGDP_EAS_7mer_counts.txt')
@@ -422,14 +428,28 @@ Before attempting to replicate any 7-mer analyses, we can first consider how man
 ```{r, fig.height = 2}
 ggplot(data = AFR_7mer_counts, aes(x = Count)) + geom_histogram() +
   scale_x_log10() +
-  labs(title = "Africa", x = "Number of Observed Polymorphisms")
+  labs(title = "Africa (SGDP)", x = "Number of Observed Polymorphisms")
 
 ggplot(data = SAS_7mer_counts, aes(x = Count)) + geom_histogram() +
   scale_x_log10() +
-  labs(title = "South Asia", x = "Number of Observed Polymorphisms")
+  labs(title = "South Asia (SGDP)", x = "Number of Observed Polymorphisms")
 ```
 
-Clearly, while some 7-mers are fairly well-represented (>1000 polymorphisms), many are not (<100 polymorphisms). For these reasons be must be extra cautious when considering power.
+\pagebreak
+
+Here are the same plots for 1KG:
+
+```{r, fig.height = 2}
+ggplot(data = KG_AFR_7mer_counts, aes(x = Count)) + geom_histogram() +
+  scale_x_log10() +
+  labs(title = "Africa (1KG)", x = "Number of Observed Polymorphisms")
+
+ggplot(data =KG_SAS_7mer_counts, aes(x = Count)) + geom_histogram() +
+  scale_x_log10() +
+  labs(title = "South Asia (1KG)", x = "Number of Observed Polymorphisms")
+```
+
+Clearly, while some 7-mers are fairly well-represented (>1000 polymorphisms) in SGDP, many are not (<10 polymorphisms). For these reasons be must be extra cautious when considering power, especially with regards to populations like South Asia with smaller variant counts (as compared to Africa, for example).
 
 \pagebreak
 
@@ -474,8 +494,7 @@ fourway.chi <- function(AFR, EUR, EAS, SAS, filter = T){
 }
 
 ordered.p <- function(pdata){
-  # preprocess data to order and remove nas 
-  pdata <- pdata[complete.cases(pdata$p),]
+  # order data by p value (consider NAs largest)
   myorder <- order(pdata$p)
   n.muts <- length(pdata$p)
   
@@ -494,8 +513,12 @@ ordered.p <- function(pdata){
     mut <-c(pdata$AFR.Count[j], pdata$EUR.Count[j], 
             pdata$EAS.Count[j], pdata$SAS.Count[j])
     data <- cbind(mut, not.mut)
-    p.ordered[j] <- chisq.test(data)$p.value
-    
+    w.e <- tryCatch(chisq.test(data), warning = function(w) w, error = function(e) e)
+    warning <- is(w.e, "warning")
+    error <- is(w.e, "error")
+    if (warning | error){
+      p.ordered[j] <- NA} else {p.ordered[j] <- chisq.test(data)$p.value}
+        
     # add these mutations to the not.mutated counts for future tests
     not.mut <- not.mut + mut
   }
@@ -540,7 +563,7 @@ top_15_from_1kg <- c("TCC->T", "ACC->T", "TCT->T","CCC->T",
                      "GCT->T", "GAC->T", "GCC->T")
 
 # calculate ordered p values
-p.3mer <- fourway.chi(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts)
+p.3mer <- fourway.chi(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, filter = F)
 o.p.3mer <- ordered.p(p.3mer)
 
 # Construct table 1
@@ -713,6 +736,228 @@ Most of the 3-mers from table 1 appear acceptably similar between SGDP and 1KG, 
 
 It is additionally is worth noting that while the approximate ranges of inferred mutation rate do agree between datasets, the actual numbers do not (see CI plots of inferred mutation rate, above).  In general, when the rates disagree, African mutation rates in SGDP are closer to those in 1kg, while the mutation rates in the other populations are more discordant.
 
+## 1.4 Reframing of Figure 1.
+
+Now, we would like to remake figure 1 to include only the polymorphisms which:
+1) Are significant in 1,000 genomes
+2) Are significant in SGDP
+3) Agree in pattern between SGDP and 1,000 genomes.
+
+To do that, we'll make and annotate a table of all contexts and the extent to which they agree
+
+```{r}
+alpha <- 0.05/96
+sig.3mer.SGDP <- o.p.3mer %>% filter(p < alpha)
+p.3mer.KG <- fourway.chi(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, filter = F)
+sig.3mer.KG <- ordered.p(p.3mer.KG) %>% filter(p < alpha)
+
+sig.3mer.KG.SGDP <- inner_join(sig.3mer.KG, sig.3mer.SGDP, by = "Context") %>% dplyr::arrange(p.x)
+# dim(sig.KG.SGDP)
+```
+There are 50 polymorphisms which are significantly variable in both SGDP and 1KG after Bonferroni correction.  Of these, 15 are shown in the plots on the previous page.
+
+```{r, eval = FALSE}
+for (i in 1:50){
+  mut <- sig.3mer.KG.SGDP$Context[i]
+  a <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, mut, small = F)
+  b <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, mut, small = F)
+  grid.arrange(a,b,ncol = 2)
+}
+```
+
+```{r}
+sig.3mer.Agreement <- sig.3mer.KG.SGDP %>%
+  mutate(Agreement = c("Agree", "Agree Mostly", "Agree Mostly", "Agree", 
+                       "Agree", "Agree", "Agree Mostly", "Agree Somewhat",
+                       "Agree Somewhat", "Disagree", "Disagree", "Disagree",
+                       "Disagree", "Agree Mostly", "Agree Somewhat", "Disagree", 
+                       "Agree Somewhat", "Disagree", "Agree", "Agree", 
+                       "Disagree", "Disagree Somewhat", "Agree", "Disagree",
+                       "Agree Somewhat", "Agree", "Agree Somewhat", "Agree Mostly",
+                       "Agree Somewhat", "Agree Somewhat", "Disagree Mostly", "Agree Somewhat", 
+                       "Disagree", "Disagree", "Agree", "Disagree",
+                       "Disagree Mostly", "Disagree Mostly", "Disagree Mostly", "Agree Mostly",
+                       "Disagree","Disagree Somewhat", "Disagree Mostly", "Disagree",  
+                       "Agree Somewhat", "Agree Somewhat", "Agree Somewhat", "Agree Somewhat",
+                       "Disagree Mostly", "Agree Somewhat")) %>%
+  mutate(p.KG = p.x, p.SGDP = p.y) %>%
+  dplyr::select(c(Context, p.KG, p.SGDP, Agreement))
+```
+
+```{r}
+kable(sig.3mer.Agreement %>% dplyr::group_by(Agreement) %>% dplyr::summarize (count = n()))
+```
+
+We can also sort these into rough groupings based on their relative rates.  Here are some examples:
+
+### Rates like Signature 1
+
+```{r, fig.height = 3}
+muts <- c("TCC->T", "ACC->T", "TCT->T")
+a <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "TCC->T", small = F)
+b <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "TCC->T", small = F)
+c <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "ACC->T", small = F)
+d <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "ACC->T", small = F)
+e <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "TCT->T", small = F)
+f <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "TCT->T", small = F)
+
+grid.arrange(a,c, e, blank, b, d, f,blank, ncol = 4)
+```
+
+```{r, fig.height = 3}
+a <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "CCC->T", small = F)
+b <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "CCC->T", small = F)
+c <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "ACT->T", small = F)
+d <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "ACT->T", small = F)
+e <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "TCA->T", small = F)
+f <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "TCA->T", small = F)
+g <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "GCC->T", small = F)
+h <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "GCC->T", small = F)
+
+grid.arrange(a,c, e, g, b, d, f, h, ncol = 4)
+```
+
+### Rates like Signature 2
+
+```{r, fig.height=3}
+a <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "GAT->T", small = F)
+b <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "GAT->T", small = F)
+c <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "ACC->A", small = F)
+d <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "ACC->A", small = F)
+e <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "GAC->T", small = F)
+f <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "GAC->T", small = F)
+
+grid.arrange(a,c, e, blank, b, d, f,blank, ncol = 4)
+```
+
+The following also had relative rates like Signature 2.  They group together in the heatmap along with CCC->A.
+
+```{r, fig.height=3}
+a <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "GAA->T", small = F)
+b <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "GAA->T", small = F)
+c <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "GCC->A", small = F)
+d <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "GCC->A", small = F)
+e <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "TCC->A", small = F)
+f <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "TCC->A", small = F)
+g <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "CCC->G", small = F)
+h <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "CCC->G", small = F)
+k <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "CCC->A", small = F)
+l <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "CCC->A", small = F)
+
+grid.arrange(a,c, e, g,k, b, d, f, h, l, ncol = 5)
+```
+
+\pagebreak
+
+### Rates like Signature 3
+
+Of the polymorphisms in signature 3, only CAC->C is significant in both datasets and appears similar across ancestral groups.
+
+```{r, fig.width = 2, fig.height = 3}
+a <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "CAC->C", small = F)
+b <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "CAC->C", small = F)
+grid.arrange(a,b, ncol = 1)
+```
+
+Here are the full plots of all significant results.
+
+```{r, fig.height = 3}
+a <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "CAC->C", small = F)
+b <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "CAC->C", small = F)
+
+c <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "TAT->T", small = F)
+d <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "TAT->T", small = F)
+
+e <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "GAC->C", small = F)
+f <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "GAC->C", small = F)
+
+g <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "AAC->C", small = F)
+h <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "AAC->C", small = F)
+
+k <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "TAC->C", small = F)
+l <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "TAC->C", small = F)
+grid.arrange(a,c, e, g, k, b, d, f, h, l, ncol = 5)
+```
+
+
+### Additional similar rates
+
+*Group A*
+
+These two polymorphisms appear similar.  They do not cluster in the heatmap.
+
+```{r, fig.height=3, fig.width = 4}
+a <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "ACA->T", small = F)
+b <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "ACA->T", small = F)
+c <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "CCA->T", small = F)
+d <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "CCA->T", small = F)
+grid.arrange(a,c,b,d, ncol = 2)
+```
+
+\pagebreak
+
+*Group B*
+
+These four polymorphisms appear similar.  They also do not cluster in the heatmap
+
+```{r, fig.height=3}
+a <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "CAC->G", small = F)
+b <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "CAC->G", small = F)
+c <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "CAA->G", small = F)
+d <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "CAA->G", small = F)
+e <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "CAG->G", small = F)
+f <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "CAG->G", small = F)
+g <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "AAA->G", small = F)
+h <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "AAA->G", small = F)
+
+grid.arrange(a,c, e, g, b, d, f, h, ncol = 4)
+```
+
+### Remaining polymorphisms
+
+The following polymorphisms are similar between SGDP and 1KG, and they are significant in both datasets, but they do not resemble any other group.
+
+```{r, fig.height = 6, fig.width = 7}
+a <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "AAC->T", small = F)
+b <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "AAC->T", small = F)
+c <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "ACT->G", small = F)
+d <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "ACT->G", small = F)
+e <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "GAC->G", small = F)
+f <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "GAC->G", small = F)
+g <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "AAC->G", small = F)
+h <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "AAC->G", small = F)
+k <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "AAT->G", small = F)
+l <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "AAT->G", small = F)
+m <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "GAG->T", small = F)
+o <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "GAG->T", small = F)
+q <- CI.plot(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, "TAC->T", small = F)
+r <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, "TAC->T", small = F)
+
+grid.arrange(a,c,e,g, b, d,f,h,k,m,q, blank, l,o,r, blank, ncol = 4)
+```
+
+```{r}
+sig.3mer.Agreement$Notes <- c("Sig. 1 previously reported", "Sig. 1 previously reported", "Sig. 1 previously reported",
+                             "Sig. 2", "Sig. 2", "Sig. 1 previously reported", 
+                             "AFR elevated", "Putative Sig. 1", "Putative Sig. 1",
+                             "CpG (Sig. 4)", "CpG (Sig. 4)", "CpG (Sig. 4)",
+                             "", "Sig. 2", "",
+                             "3mer subcontext of TTTAAA->T", "AFR elevated", "CpG",
+                             "AFR elevated", "Sig 2.", "",
+                             "Sig. 3", "Sig. 2", "CpG Transversion (Sig. 5)",
+                             "Sig. 2", "Sig. 2", "",
+                             "AFR elevated", "AFR elevated", "Sig. 3", 
+                             "","","",
+                             "", "Afr elevated", "Sig. 3",
+                             "","","",
+                             "Sig. 2", "", "",
+                             "","","",
+                             "","","","","")
+
+write.table(sig.3mer.Agreement, "SGDP_KG_Agreement_table.txt", quote = F, sep = ",", row.names = F)
+```
+
+
 \pagebreak
 
 
@@ -777,7 +1022,7 @@ s2 <- c("GAT->T", "ACC->A", "GAC->T")
 b <- CI.plot.bygroup(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, s2, "profile #2")
 
 s3 <-c("CAC->C", "TAT->T", "GAC->C", "AAC->C", "TAC->C")
-c <- CI.plot.bygroup(KG_AFR_3mer_counts, KG_EUR_3mer_counts, KG_EAS_3mer_counts, KG_SAS_3mer_counts, s3, "profile #3")
+c <- CI.plot.bygroup(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, s3, "profile #3")
 
 s4 <-c("ACG->T", "CCG->T", "GCG->T", "TCG->T")
 d <- CI.plot.bygroup(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, s4, "profile #4")
@@ -867,16 +1112,21 @@ include_graphics("IMDR_Fig1B.png")
 
 We will not attempt to replicate scatter plots as in Figure 2 because it is not likely that inferred mutation rate for 7-mers in SGDP will be accurate enough for these plots to be meaningful (See Section 0.3).  Likewise, the suggestion that certain 7-mers are driving the *AC$\rightarrow$C enrichment in Japan compared to East Asia is an interesting result, but since there are 5 Chinese Dai and 3 Japanese individuals in SGDP, attempting to replicate this result may not be appropriate.  Ideally, this preliminary finding could be replicated and perhaps further explored in a large Asian genomic dataset, the likes of which, to our knowledge, are currently not publically available.
 
+
+\pagebreak
+
 # 4. Signatures of Variation at Broader Sequence Contexts
 
-We will not attempt hypothesis testing across all 5-mer and 7-mer polymorphism classes, since many of these tests are sure to invlolve too few observations to be carried out, and the hypothesis testing burden would massively reduce statistical power.  Rather, we will repeat the hypothesis tests for only the 7-mer classes shown in table 3.
+## 4.1 Heterogeneity tests for 7mers
 
-```{r}
+We will not attempt hypothesis testing across all 5-mer and 7-mer polymorphism classes, since many of these tests are sure to invlolve too few observations to be carried out, and the hypothesis testing burden would massively reduce statistical power.  Rather, we will repeat the hypothesis tests for only the 7-mer classes shown in table 3.  The first table below shows the results in SGDP, while the table below shows the values in 1KG.  The graphs on the next page visualize these relationships.
+
+```{r, eval = T}
 table_3_7mers <- c("CAAACCC->C", "TTTATTT->T", "TTTAAAA->T", "ATTAAAA->T", "AAACAAA->A")
 
 # calculate ordered p values
-p.7mer <- fourway.chi(AFR_7mer_counts, EUR_7mer_counts, EAS_7mer_counts, SAS_7mer_counts)
-o.p.7mer <- ordered.p(p.7mer, filter = F)
+p.7mer <- fourway.chi(AFR_7mer_counts, EUR_7mer_counts, EAS_7mer_counts, SAS_7mer_counts, filter = F)
+o.p.7mer <- ordered.p(p.7mer)
 
 rates <- data.frame(Context = AFR_7mer_counts$Context, 
            "AFR relative rate" = rep(1, 24576),
@@ -885,62 +1135,119 @@ rates <- data.frame(Context = AFR_7mer_counts$Context,
            "EAS relative rate" = round(EAS_7mer_counts$Rate/AFR_7mer_counts$Rate, digits = 2))
 
 table_3 <- left_join(rates, o.p.7mer) %>% 
-  select(c(Context, AFR.relative.rate, EUR.relative.rate, SAS.relative.rate, EAS.relative.rate, p)) %>%
+  dplyr::select(c(Context, AFR.relative.rate, EUR.relative.rate, SAS.relative.rate, EAS.relative.rate, p)) %>%
   filter(Context %in% table_3_7mers)
 
 kable(table_3, digits = 600, row.names = F,
       caption = "Table 3 recalculated with SGDP data")
 ```
 
-We will additionally plot the inferred mutation rate of the WTTAAA$\rightarrow$T 7-mers across continents. We can't use my usual graphing function to make This figure because there are '$\rightarrow$' characters that we need to insert in the plot text.  
 
-```{r F4B set up data}
-muts <- c("TTTAAAA->T", "ATTAAAA->T")
-AFR <- AFR_7mer_counts
-EUR <- EUR_7mer_counts
-EAS <- EAS_7mer_counts
-SAS <- SAS_7mer_counts
+```{r, eval = T}
+table_3_7mers <- c("CAAACCC->C", "TTTATTT->T", "TTTAAAA->T", "ATTAAAA->T", "AAACAAA->A")
+
+# calculate ordered p values
+p.7mer <- fourway.chi(KG_AFR_7mer_counts, KG_EUR_7mer_counts, KG_EAS_7mer_counts, KG_SAS_7mer_counts, filter = F)
+o.p.7mer <- ordered.p(p.7mer)
+
+rates <- data.frame(Context = AFR_7mer_counts$Context, 
+           "AFR relative rate" = rep(1, 24576),
+           "EUR relative rate" = round(KG_EUR_7mer_counts$Rate/KG_AFR_7mer_counts$Rate, digits = 2),
+           "SAS relative rate" = round(KG_SAS_7mer_counts$Rate/KG_AFR_7mer_counts$Rate, digits = 2),
+           "EAS relative rate" = round(KG_EAS_7mer_counts$Rate/KG_AFR_7mer_counts$Rate, digits = 2))
+
+table_3 <- left_join(rates, o.p.7mer) %>% 
+  dplyr::select(c(Context, AFR.relative.rate, EUR.relative.rate, SAS.relative.rate, EAS.relative.rate, p)) %>%
+  filter(Context %in% table_3_7mers)
+
+kable(table_3, digits = 600, row.names = F,
+      caption = "Table 3 recalculated with 1KG data")
 ```
+
+\pagebreak
+
+### 7mers in SGDP
+
+```{r, fig.height = 4, fig.width=7}
+a <- CI.plot(AFR_7mer_counts, EUR_7mer_counts, EAS_7mer_counts, SAS_7mer_counts, "AAACAAA->A", small = F)
+b <- CI.plot(AFR_7mer_counts, EUR_7mer_counts, EAS_7mer_counts, SAS_7mer_counts, "TTTATTT->T", small = F)
+c <- CI.plot(AFR_7mer_counts, EUR_7mer_counts, EAS_7mer_counts, SAS_7mer_counts, "ATTAAAA->T", small = F)
+d <- CI.plot(AFR_7mer_counts, EUR_7mer_counts, EAS_7mer_counts, SAS_7mer_counts, "CAAACCC->C", small = F)
+e <- CI.plot(AFR_7mer_counts, EUR_7mer_counts, EAS_7mer_counts, SAS_7mer_counts, "TTTAAAA->T", small = F)
+
+grid.arrange(a,b,c,d,e, ncol = 4)
+```
+
+### 7mers in 1KG
+
+
+```{r, fig.height = 4, fig.width=7}
+a <- CI.plot(KG_AFR_7mer_counts, KG_EUR_7mer_counts, KG_EAS_7mer_counts, KG_SAS_7mer_counts, "AAACAAA->A", small = F)
+b <- CI.plot(KG_AFR_7mer_counts, KG_EUR_7mer_counts, KG_EAS_7mer_counts, KG_SAS_7mer_counts, "TTTATTT->T", small = F)
+c <- CI.plot(KG_AFR_7mer_counts, KG_EUR_7mer_counts, KG_EAS_7mer_counts, KG_SAS_7mer_counts, "ATTAAAA->T", small = F)
+d <- CI.plot(KG_AFR_7mer_counts, KG_EUR_7mer_counts, KG_EAS_7mer_counts, KG_SAS_7mer_counts, "CAAACCC->C", small = F)
+e <- CI.plot(KG_AFR_7mer_counts, KG_EUR_7mer_counts, KG_EAS_7mer_counts, KG_SAS_7mer_counts, "TTTAAAA->T", small = F)
+
+grid.arrange(a,b,c,d,e, ncol = 4)
+```
+
+## 4.2 WTTAAA 7-mers
+
+We will additionally plot the inferred mutation rate of the WTTAAA$\rightarrow$T 7-mers across continents.  SGDP is pictured on the left, 1KG on the right.
 
 ```{r}
-#NOTE: muts must all be from different contexts.  Otherwise this will do weird things.
-muts.i <- which(is.element(AFR$Context, muts))
-popnames <- c("Africa","Europe", "South\nAsia", "East\nAsia")
-colors <- c("forestgreen", "darkblue", "magenta","red")
-
-#have to do a silly workaround or R will sort popnames alphanumerically
-poplabs <- factor(popnames, levels= popnames)
-
-#cycle through pops and get counts for mut
-counts <- rep(0, 4)
-sums <- rep(0, 4)
-pops <- list(AFR, EUR, SAS, EAS)
-
-for (i in 1:length(pops)){
-  counts[i] <- sum(pops[[i]]$Count[muts.i]) #number of obersvations of muts in pop
-  sums[i]<- sum(pops[[i]]$Count)#total polymorphisms in pop
+final_plot <- function(AFR, EUR, EAS, SAS, muts =  c("TTTAAAA->T", "ATTAAAA->T")){
+  #NOTE: muts must all be from different contexts.  Otherwise this will do weird things.
+  muts.i <- which(is.element(AFR$Context, muts))
+  popnames <- c("Africa","Europe", "South\nAsia", "East\nAsia")
+  colors <- c("forestgreen", "darkblue", "magenta","red")
+  
+  #have to do a silly workaround or R will sort popnames alphanumerically
+  poplabs <- factor(popnames, levels= popnames)
+  
+  #cycle through pops and get counts for mut
+  counts <- rep(0, 4)
+  sums <- rep(0, 4)
+  pops <- list(AFR, EUR, SAS, EAS)
+  
+  for (i in 1:length(pops)){
+    counts[i] <- sum(pops[[i]]$Count[muts.i]) #number of obersvations of muts in pop
+    sums[i]<- sum(pops[[i]]$Count)#total polymorphisms in pop
+  }
+  
+  #estimate substitution probability
+  N.c <- sum(AFR$context_in_genome[muts.i])
+  theta <- counts/N.c
+  L <- theta - 1.96*sqrt(theta*(1-theta)/N.c)
+  U <- theta + 1.96*sqrt(theta*(1-theta)/N.c)
+  
+  #normalize to rate estimate; assume genome wide subsitution probability is measured without error
+  norm <- 1.2E-8*(sum(as.numeric(AFR$context_in_genome))/3)/sums
+  
+  df <- data.frame(cbind(popnames, theta*norm, L*norm, U*norm))
+  plotcol <- reorder(colors, theta*norm)
+  
+  a <- ggplot(df, aes(reorder(popnames, c(1,2,3,4)), theta*norm)) +
+    geom_point(size = 3, color = plotcol) +
+    geom_errorbar(aes(ymax = U*norm, ymin = L*norm), color = plotcol, size =.75)+
+    labs(y =  bquote(paste("Mutation rate of")~.("TTTAAAA")%->%.("T")~paste("and")~.("ATTAAAA")%->%.("T"))) + #y axis label
+    theme(axis.text.x = element_text(size = rel(.9)), axis.title.x = element_blank(), #adjust text sizes
+          axis.title.y = element_text(size = rel(1)), 
+          axis.text.y = element_text(size = rel(1), angle = 0, hjust = 0.5), 
+          title=element_text(size = rel(.7)),
+          legend.position = 'none')
+  return(a)
 }
-
-#estimate substitution probability
-N.c <- sum(AFR$context_in_genome[muts.i])
-theta <- counts/N.c
-L <- theta - 1.96*sqrt(theta*(1-theta)/N.c)
-U <- theta + 1.96*sqrt(theta*(1-theta)/N.c)
-
-#normalize to rate estimate; assume genome wide subsitution probability is measured without error
-norm <- 1.2E-8*(sum(as.numeric(AFR$context_in_genome))/3)/sums
-
-df <- data.frame(cbind(popnames, theta*norm, L*norm, U*norm))
-plotcol <- reorder(colors, theta*norm)
-
-b <- ggplot(df, aes(reorder(popnames, c(1,2,3,4)), theta*norm)) +
-  geom_point(size = 3, color = plotcol) +
-  geom_errorbar(aes(ymax = U*norm, ymin = L*norm), color = plotcol, size =.75)+
-  labs(y =  bquote(paste("Mutation rate of")~.("TTTAAAA")%->%.("T")~paste("and")~.("ATTAAAA")%->%.("T"))) + #y axis label
-  theme(axis.text.x = element_text(size = rel(.9)), axis.title.x = element_blank(), #adjust text sizes
-        axis.title.y = element_text(size = rel(1)), axis.text.y = element_text(size = rel(1), angle = 0, hjust = 0.5), title = element_text(size = rel(.7)),
-        legend.position = 'none')
-
-print(b)
 ```
 
+```{r, fig.width=5, fig.height = 3}
+a <- final_plot(AFR_7mer_counts, EUR_7mer_counts, EAS_7mer_counts, SAS_7mer_counts)
+
+b <- final_plot(KG_AFR_7mer_counts, KG_EUR_7mer_counts, KG_EAS_7mer_counts, KG_SAS_7mer_counts)
+
+grid.arrange(a, b, ncol = 2)
+```
+
+## 4.3 Summary
+
+CAAACCC$\rightarrow$C and TTTAAAA$\rightarrow$T replicate.  AAACAAA$\rightarrow$A and TTTATTT$\rightarrow$T do not; as usual the relative rate in Africa strongly differs between SGDP and 1KG. ATTAAAA$\rightarrow$T doesn't replicate; although the confidence bars on the inferred rates are so large this indicates that there may not have been enough variants to get reliable estimates of mutation rate. The 7-mer group, WTTAAAA$\rightarrow$T appears to replicate, although observing TTTAAAA$\rightarrow$T and ATTAAAA$\rightarrow$T in isolation indicates that this is probably just because TTTAAAA$\rightarrow$T agrees fairly well between the two data sets.

@@ -1,0 +1,135 @@
+---
+title: "X chromosome signatures"
+author: "Rachael Caelie (Rocky) Aikens"
+date: "12/7/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, fig.align = "center")
+knitr::opts_knit$set(root.dir = '../../data')
+
+library(ggplot2)
+library(gplots)
+library(stats)
+library(readr)
+library(dplyr)
+library(knitr)
+require(reshape2)
+library(gridExtra)
+library(grid)
+library(DescTools)
+require("ggrepel")
+theme_set(theme_light())
+```
+
+# Introduction
+
+Because of the nature of sex chromosome inheritance and expression, patterns of polymorphism and mutation rate may differ on the X Chromosome compared to the autosome.  For this reason, we wanted to understand whether what signatures of variation in polymorphism appear when we restrict our analysis to the X Chromosome.
+
+## A Cross Continental Test for Heterogeneity in 3-mer Polymorphism Counts on the X Chromosome 
+
+```{r T1 setup methods}
+# calculates homogeneity test p values for Fourway comparisons of counts dfs
+# currently only supports 3mer dataframes when calculating sums of autosomal variants
+XChrom.BD <- function(AFR, EUR, EAS, SAS, filter = T){
+  # add autosomal columns to result
+  AFR$Auto <- rowSums(AFR[,6:27])
+  EUR$Auto <- rowSums(EUR[,6:27])
+  EAS$Auto <- rowSums(EAS[,6:27])
+  SAS$Auto <- rowSums(SAS[,6:27])
+  
+  n.contexts = length(AFR$Context)
+  
+  # make dataframe for results
+  result <- data.frame(matrix(ncol=15,nrow=n.contexts))
+  colnames(result) <- c("Context", "X5mer","X3mer", "X1mer", 
+                        "AFR.Auto", "AFR.X", "EUR.Auto", "EUR.X", 
+                        "EAS.Auto", "EAS.X", "SAS.Auto", "SAS.X", "BDp", "p", "CommonOR")
+  result$Context <- AFR$Context
+  result$X5mer <- AFR$X5mer # for smaller contexts, X3mer and X5mer columns do not exist,
+  result$X3mer <- AFR$X3mer # and will disappear at this step
+  result$X1mer <- AFR$X1mer 
+  result$AFR.Auto <- AFR$Auto; result$EUR.Auto <- EUR$Auto
+  result$EAS.Auto <- EAS$Auto; result$SAS.Auto <- SAS$Auto
+  result$AFR.X <- AFR$chrX; result$EUR.X <- EUR$chrX
+  result$EAS.X <- EAS$chrX; result$SAS.X <- SAS$chrX
+  
+  # start setting up tables
+  sums.Auto <- c(sum(AFR$Auto), sum(EUR$Auto), sum(EAS$Auto), sum(SAS$Auto))
+  sums.X <- c(sum(AFR$chrX), sum(EUR$chrX), sum(EAS$chrX), sum(SAS$chrX))
+  
+  # set up table and run test for each context
+  for (i in 1:n.contexts){
+    mut.Auto <- c(AFR$Auto[i], EUR$Auto[i], EAS$Auto[i], SAS$Auto[i])
+    mut.X <- c(AFR$chrX[i], EUR$chrX[i], EAS$chrX[i], SAS$chrX[i])
+    nmut.Auto <- sums.Auto - mut.X
+    nmut.X <- sums.X - mut.X
+    data <- array(rep(1, 2*2*4), dim=c(2, 2, 4))
+    
+    data[2,1,] <- mut.X
+    data[2,2,] <- nmut.X
+    data[1,1,] <- mut.Auto
+    data[1,2,] <- nmut.Auto 
+    
+    result$BDp[i] <- BreslowDayTest(data)$p.value
+    result$p[i] <- mantelhaen.test(data)$p.value
+    result$CommonOR[i] <- as.numeric(mantelhaen.test(data)$estimate)
+  }
+    
+  return(result)
+}
+
+fdr <- function(p.data){
+  p.data <- p.data[complete.cases(p.data),]
+  
+  # This uses Benjamini-Hochberg-Yekutieli fdr
+  p.data$fdr <- p.adjust(p.data$p, method = "fdr")
+  
+  # multiple hypothesis correction by holm
+  p.data$holm <- p.adjust(p.data$p, method = "holm")
+  
+  alpha = 0.05/length(p.data$p)
+  p.data <- p.data[complete.cases(p.data), ]
+  
+  n.sig <- c(length(p.data$p), sum(p.data$p < alpha), sum(p.data$holm< 0.05), 
+             sum(p.data$fdr< 0.1), sum(p.data$fdr< 0.05), 
+             sum(p.data$fdr< 0.01), sum(p.data$fdr< 0.001))
+  
+  names(n.sig) <- c("Total tests","Bonferroni", "Holm", 
+                    "FDR<0.1", "FDR<0.05", 
+                    "FDR<0.01", "FDR<0.001")
+  
+  return(list(n.sig, p.data))
+}
+```
+
+```{r 1kg setup data}
+AFR_3mer_counts <- read_delim("3mer/AFR_3mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+  
+EUR_3mer_counts <- read_delim("3mer/EUR_3mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+
+EAS_3mer_counts <- read_delim("3mer/EAS_3mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE) 
+
+SAS_3mer_counts <- read_delim("3mer/SAS_3mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE) 
+
+```
+
+```{r}
+p.X <- XChrom.BD(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts)
+
+fdr.P.X <- fdr(p.X)
+
+write.table(x = fdr.P.X[[2]], file = "../workflows_finished/X_Chromosome_only/3mer_Xtest.txt", quote = F, sep = "\t", row.names = F)
+```
+
+The following are results from a Breslow Day and CMH test for each 3-mer polymorphism type.
+
+```{r}
+print(fdr.P.X)
+```
+
