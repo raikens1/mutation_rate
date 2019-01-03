@@ -1117,7 +1117,7 @@ We will not attempt to replicate scatter plots as in Figure 2 because it is not 
 
 # 4. Signatures of Variation at Broader Sequence Contexts
 
-## 4.1 Heterogeneity tests for 7mers
+## 4.2 Heterogeneity tests for 7mers
 
 We will not attempt hypothesis testing across all 5-mer and 7-mer polymorphism classes, since many of these tests are sure to invlolve too few observations to be carried out, and the hypothesis testing burden would massively reduce statistical power.  Rather, we will repeat the hypothesis tests for only the 7-mer classes shown in table 3.  The first table below shows the results in SGDP, while the table below shows the values in 1KG.  The graphs on the next page visualize these relationships.
 
@@ -1191,7 +1191,7 @@ e <- CI.plot(KG_AFR_7mer_counts, KG_EUR_7mer_counts, KG_EAS_7mer_counts, KG_SAS_
 grid.arrange(a,b,c,d,e, ncol = 4)
 ```
 
-## 4.2 WTTAAA 7-mers
+## 4.3 WTTAAA 7-mers
 
 We will additionally plot the inferred mutation rate of the WTTAAA$\rightarrow$T 7-mers across continents.  SGDP is pictured on the left, 1KG on the right.
 
@@ -1248,6 +1248,6 @@ b <- final_plot(KG_AFR_7mer_counts, KG_EUR_7mer_counts, KG_EAS_7mer_counts, KG_S
 grid.arrange(a, b, ncol = 2)
 ```
 
-## 4.3 Summary
+## 4.4 Summary
 
 CAAACCC$\rightarrow$C and TTTAAAA$\rightarrow$T replicate.  AAACAAA$\rightarrow$A and TTTATTT$\rightarrow$T do not; as usual the relative rate in Africa strongly differs between SGDP and 1KG. ATTAAAA$\rightarrow$T doesn't replicate; although the confidence bars on the inferred rates are so large this indicates that there may not have been enough variants to get reliable estimates of mutation rate. The 7-mer group, WTTAAAA$\rightarrow$T appears to replicate, although observing TTTAAAA$\rightarrow$T and ATTAAAA$\rightarrow$T in isolation indicates that this is probably just because TTTAAAA$\rightarrow$T agrees fairly well between the two data sets.

@@ -21,6 +21,7 @@ require(reshape2)
 library(gridExtra)
 library(grid)
 require("ggrepel")
+theme_set(theme_grey())
 ```
 
 # Table 1
@@ -302,7 +303,7 @@ norm.3mer.rates <- norm.byrow(rates.3mer, "fdiff")
 dr <- make.heatmap(norm.3mer.rates)
 ```
 
-## BCE: CI plots of polymorphism clusters
+## BC: CI plots of polymorphism clusters
 
 To make these panels, I need the following **functions** and *datasets*:
 
@@ -360,9 +361,6 @@ a <- CI.plot.bygroup(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer
 
 s2 <- c("GAT->T", "ACC->A", "GAC->T")
 b <- CI.plot.bygroup(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, s2, "profile #2")
-
-s4 <-c("ACG->T", "CCG->T", "GCG->T", "TCG->T")
-d <- CI.plot.bygroup(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, s4, "profile #4")
 ```
 
 ## D: CI plots for signal 3
@@ -423,15 +421,15 @@ CI.plot.subpop.bygroup <- function(subpops, muts, popnames, colors = colors.ance
 ```
 
 ```{r F1E format data}
-subpops1E <- list(AFR_3mer_counts, EUR_3mer_counts, SAS_3mer_counts, CDX_EAS_3mer_counts, KHV_EAS_3mer_counts, CHS_EAS_3mer_counts, CHB_EAS_3mer_counts, JPT_EAS_3mer_counts)
-colors1E <- c("forestgreen", "darkblue", "magenta", rep("red", 5))
-popnames1E <- c("Africa", "Europe", "South Asia", "CDX", "KHV", "CHS", "CHB", "JPT")
+subpops1E <- list(CDX_EAS_3mer_counts, KHV_EAS_3mer_counts, CHS_EAS_3mer_counts, CHB_EAS_3mer_counts, JPT_EAS_3mer_counts)
+colors1E <- rep("red", 5)
+popnames1E <- c("CDX", "KHV", "CHS", "CHB", "JPT")
 muts1E <- c("CAC->C", "TAT->T", "GAC->C", "AAC->C", "TAC->C")
 ```
 
-```{r F1E make, fig.height=3, fig.width = 9}
-c <- CI.plot.subpop.bygroup(subpops1E, muts1E, popnames1E, colors1E, "profile #3")
-grid.draw(cbind(ggplotGrob(a), ggplotGrob(b), ggplotGrob(c), ggplotGrob(d), size = "last"))
+```{r F1E make, fig.height=3, fig.width = 6.75}
+c <- CI.plot.subpop.bygroup(subpops1E, muts1E, popnames1E, colors1E, "profile #3 in East Asia")
+grid.draw(cbind(ggplotGrob(a), ggplotGrob(b), ggplotGrob(c), size = "last"))
 ```
 
 # Figure 2
@@ -524,7 +522,7 @@ subrate.scplot <- function(count1, count2, mut, pops = c("Pop 1", "Pop 2"), labe
 ```
 
 ```{r F2AB make, fig.height=3.25, fig.width=7.5}
-a <- subrate.scplot(CDX_EAS_7mer_counts, JPT_EAS_7mer_counts, "ACG->T", pops = c("Chinese Dai", "Japanese"))
+a <- subrate.scplot(CDX_EAS_7mer_counts, JPT_EAS_7mer_counts, "TCC->T", pops = c("Chinese Dai", "Japanese"), lims = c(0,1.945e-8))
 b <- subrate.scplot(EAS_7mer_counts, EUR_7mer_counts, "TCC->T", pops = c("East Asia", "Europe"), lims = c(0,1.945e-8))
 grid.arrange(a, b, ncol = 2)
 ```
@@ -551,6 +549,7 @@ kable(subset(p.CDXJPT, p.CDXJPT$fdr < 0.05), row.names = F, digits = 500)
 k <- which(JPT_EAS_7mer_counts$Context == "CAAACCC->C");JPT_EAS_7mer_counts$Rate[k]/CDX_EAS_7mer_counts$Rate[k]
 ```
 Next, we have to run a test for X enrichment, described in the paper.
+
 ```{r def preprocessor, echo = F}
 X.preprocessing <- function(counts, gw, muts = c()){
   
@@ -583,7 +582,6 @@ X.preprocessing <- function(counts, gw, muts = c()){
   return(result)
 }
 ```
-
 
 ```{r, setup for X test, echo = F}
 JPT7mers <- subset(p.CDXJPT$Context, p.CDXJPT$fdr < 0.05)
@@ -656,18 +654,185 @@ c <- CI.plot.subpop.bygroup(EASsubpops, JPT7mers, EASpopnames, rep("red", 5), "s
 grid.draw(cbind(ggplotGrob(b), ggplotGrob(c), size = "last"))
 ```
 
-# Figure 4
 
-##A
+
+# 5mer and 7mer chi squared tests
+
+```{r}
+table1_3mers <- table1$Context
+previously_reported_3mers <- c("TCC->T", "ACC->T", "TCT->T", "CCC->T")
+sig1_3mers <- c("TCC->T", "ACC->T", "TCT->T", "CCC->T", "ACT->T", "TCA->T", "GCC->C")
+sig2_3mers <- c("GAT->T", "ACC->A", "GAC->T", "GCC->A", "TCC->A", "CCC->G", "GAA->T", "CCC->A")
+```
+
+## 5mer
+
+```{r}
+SAS_5mer_counts <- read_delim("5mer/SAS_5mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+AFR_5mer_counts <- read_delim("5mer/AFR_5mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+EAS_5mer_counts <- read_delim("5mer/EAS_5mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+EUR_5mer_counts <- read_delim("5mer/EUR_5mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+
+SGDP_SAS_5mer_counts <- read_delim("5mer/SGDP_SAS_5mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+SGDP_AFR_5mer_counts <- read_delim("5mer/SGDP_AFR_5mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+SGDP_EAS_5mer_counts <- read_delim("5mer/SGDP_EAS_5mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+SGDP_EUR_5mer_counts <- read_delim("5mer/SGDP_EUR_5mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+```
+
+```{r}
+o.p.5mer <- fourway.chi(AFR_5mer_counts, EUR_5mer_counts, EAS_5mer_counts, SAS_5mer_counts) %>% ordered.p()
+```
+1535 out of 1536 5mer polymorphism classes appear > 5 times in all continental groups.  The only polymorphism with insufficient data for chi squared testing is:
+
+```{r}
+kable(filter(o.p.5mer, is.na(p)))
+```
+
+Letting the alpha value be 0.05/1535, we have the following number of significant results:
+
+```{r}
+alpha <- 0.05/1535
+sum(o.p.5mer$p < alpha, na.rm = T)
+```
+
+This many are expansions signature 1 polymorphisms
+```{r}
+(filter(o.p.5mer, p < alpha, X3mer %in% sig1_3mers) %>% dim())[1]
+```
+
+This many are expansions of 3mers in signatures 1 and 2, or table 1 reported in this paper.
+```{r}
+(filter(o.p.5mer, p < alpha, X3mer %in% c(table1_3mers, sig1_3mers, sig2_3mers)) %>% dim())[1]
+```
+This leaves this many new results
+
+```{r}
+156-107
+```
+
+```{r}
+sig.new.5mers <- filter(o.p.5mer, p < alpha, !(X3mer %in% c(sig1_3mers, sig2_3mers, table1_3mers)))
+new_5mers <- sig.new.5mers$Context
+```
+
+```{r}
+o.p.5mer.SGDP <- fourway.chi(SGDP_AFR_5mer_counts, SGDP_EUR_5mer_counts, SGDP_EAS_5mer_counts, SGDP_SAS_5mer_counts) %>% ordered.p()
+```
+
+
+```{r, eval = F}
+ SGDP_represented_5mers <- filter(o.p.5mer.SGDP, Context %in% new_5mers & 
+             AFR.Count > 250 &
+             EUR.Count > 250 &
+             EAS.Count > 250 &
+             SAS.Count > 250)$Context
+
+ KG_represented_5mers <- filter(sig.new.5mers, AFR.Count > 100 &
+             EUR.Count > 250 &
+             EAS.Count > 250 &
+             SAS.Count > 250)$Context
+ 
+ both_represented_5mers <- intersect(SGDP_represented_5mers, KG_represented_5mers)
+ 
+ for (i in 1:length(both_represented_5mers)){
+   mut <- both_represented_5mers[i]
+   a <- CI.plot(AFR_5mer_counts, EUR_5mer_counts, EAS_5mer_counts, SAS_5mer_counts, mut)
+   b <- CI.plot(SGDP_AFR_5mer_counts, SGDP_EUR_5mer_counts, SGDP_EAS_5mer_counts, SGDP_SAS_5mer_counts, mut)
+   print(grid.arrange(a,b, ncol = 2))
+ }
+```
+
+## 7mer
+
 
 ```{r F4 upload data}
 SAS_7mer_counts <- read_delim("7mer/SAS_7mer_counts.txt", 
                               "\t", escape_double = FALSE, trim_ws = TRUE)
 AFR_7mer_counts <- read_delim("7mer/AFR_7mer_counts.txt", 
                               "\t", escape_double = FALSE, trim_ws = TRUE)
+
+SGDP_AFR_7mer_counts <- read_delim("7mer/SGDP_AFR_7mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+SGDP_EUR_7mer_counts <- read_delim("7mer/SGDP_EUR_7mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+SGDP_EAS_7mer_counts <- read_delim("7mer/SGDP_EAS_7mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
+SGDP_SAS_7mer_counts <- read_delim("7mer/SGDP_SAS_7mer_counts.txt", 
+                              "\t", escape_double = FALSE, trim_ws = TRUE)
 ```
 
+```{r}
+o.p.7mer <- fourway.chi(AFR_7mer_counts, EUR_7mer_counts, EAS_7mer_counts, SAS_7mer_counts) %>% ordered.p()
+```
+
+20665 out of 24576 7mer polymorphism classes appear > 5 times in all continental groups. 
+```{r}
+dim(filter(o.p.7mer, !is.na(p)))
+```
+
+Letting the alpha value be 0.05/20665, we have the following number of significant results:
+
+```{r}
+alpha <- 0.05/20665
+sum(o.p.7mer$p < alpha, na.rm = T)
+```
+This many are expansions signature 1 polymorphisms
+```{r}
+(filter(o.p.7mer, p < alpha, X3mer %in% sig1_3mers) %>% dim())[1]
+```
+
+This many are expansions of 3mers in signature 2 reported in this paper.
+```{r}
+(filter(o.p.7mer, p < alpha, X3mer %in% sig2_3mers) %>% dim())[1]
+```
+
+This leaves this many new results
+
+```{r}
+sig.new.7mers <- filter(o.p.7mer, p < alpha, !(X3mer %in% c(sig1_3mers, sig2_3mers)))
+new_7mers <- sig.new.7mers$Context
+length(new_7mers)
+```
+
+```{r}
+o.p.7mer.SGDP <- fourway.chi(SGDP_AFR_7mer_counts, SGDP_EUR_7mer_counts, SGDP_EAS_7mer_counts, SGDP_SAS_7mer_counts) %>% ordered.p()
+```
+
+```{r, eval = F}
+ SGDP_represented_7mers <- filter(o.p.7mer.SGDP, Context %in% new_7mers & 
+             AFR.Count > 200 &
+             EUR.Count > 200 &
+             EAS.Count > 200 &
+             SAS.Count > 200)$Context
+
+ KG_represented_7mers <- filter(sig.new.7mers, AFR.Count > 200 &
+             EUR.Count > 200 &
+             EAS.Count > 200 &
+             SAS.Count > 200)$Context
+ 
+ both_represented_7mers <- intersect(SGDP_represented_7mers, KG_represented_7mers)
+ interesting_7mers <- c("ACTACAG->C", "CAAACCC->C", "TATACAG->C", "CCCACAG->C")
+ 
+ for (i in 1:length(both_represented_7mers)){
+   mut <- both_represented_7mers[i]
+   a <- CI.plot(AFR_7mer_counts, EUR_7mer_counts, EAS_7mer_counts, SAS_7mer_counts, mut)
+   b <- CI.plot(SGDP_AFR_7mer_counts, SGDP_EUR_7mer_counts, SGDP_EAS_7mer_counts, SGDP_SAS_7mer_counts, mut)
+   print(grid.arrange(a,b, ncol = 2))
+ }
+```
+
+
+
 ```{r F4A make}
+table1_3mers <- table1$Context
 # calculate ordered p values
 p.7mer <- fourway.chi(AFR_7mer_counts, EUR_7mer_counts, EAS_7mer_counts, SAS_7mer_counts)
 o.p.7mer <- ordered.p(p.7mer)
@@ -718,8 +883,9 @@ opAFRvEAS <- subset(opAFRvEAS, opAFRvEAS$p < 1e-7)
 kable(subset(opAFRvEAS, is.element(opAFRvEAS$Context, c("CAAACCC->C", "TTTATTT->T", "TTTAAAA->T", "ATTAAAA->T", "AAACAAA->A"))))
 ```
 
+# Figure 4
 
-##BC
+## AB
 
 We can't use my usual graphing function to make Figure 4B because there are '$\rightarrow$' characters that we need to insert in the plot text.  We will also need the following:
 
@@ -727,7 +893,7 @@ We can't use my usual graphing function to make Figure 4B because there are '$\r
 * *7mer count dataframes for all nonadmixed continental populations*
 
 ```{r F4B set up data}
-muts <- c("TTTAAAA->T", "ATTAAAA->T")
+muts <- c("TTTAAAA->T")
 AFR <- AFR_7mer_counts
 EUR <- EUR_7mer_counts
 EAS <- EAS_7mer_counts
@@ -768,7 +934,7 @@ plotcol <- reorder(colors, theta*norm)
 b <- ggplot(df, aes(reorder(popnames, c(1,2,3,4)), theta*norm)) +
   geom_point(size = 3, color = plotcol) +
   geom_errorbar(aes(ymax = U*norm, ymin = L*norm), color = plotcol, size =.75)+
-  labs(y =  bquote(paste("Mutation rate of")~.("TTTAAAA")%->%.("T")~paste("and")~.("ATTAAAA")%->%.("T"))) + #y axis label
+  labs(y =  bquote(paste("Mutation rate of")~.("TTTAAAA")%->%.("T"))) + #y axis label
   theme(axis.text.x = element_text(size = rel(.9)), axis.title.x = element_blank(), #adjust text sizes
         axis.title.y = element_text(size = rel(1)), axis.text.y = element_text(size = rel(1), angle = 0, hjust = 0.5), title = element_text(size = rel(.7)),
         legend.position = 'none')
