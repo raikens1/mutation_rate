@@ -698,29 +698,7 @@ grid.arrange(a,b, c, d, e, f, g, h, ncol = 4)
 
 \pagebreak
 
-```{r S F 8, fig.height=8}
-a <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, mut = "CAC->C", dataset = "1,000 Genomes")
-b <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, mut = "TAT->T", dataset = "1,000 Genomes")
-c <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, mut = "GAC->C", dataset = "1,000 Genomes")
-d <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, mut = "AAC->C", dataset = "1,000 Genomes")
-e <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, mut = "TAC->C", dataset = "1,000 Genomes")
-
-f <- CI.plot(SGDP_AFR_3mer_counts, SGDP_EUR_3mer_counts, SGDP_EAS_3mer_counts, SGDP_SAS_3mer_counts, mut = "CAC->C", dataset = "SGDP")
-g <- CI.plot(SGDP_AFR_3mer_counts, SGDP_EUR_3mer_counts, SGDP_EAS_3mer_counts, SGDP_SAS_3mer_counts, mut = "TAT->T", dataset = "SGDP")
-h <- CI.plot(SGDP_AFR_3mer_counts, SGDP_EUR_3mer_counts, SGDP_EAS_3mer_counts, SGDP_SAS_3mer_counts, mut = "GAC->C", dataset = "SGDP")
-i <- CI.plot(SGDP_AFR_3mer_counts, SGDP_EUR_3mer_counts, SGDP_EAS_3mer_counts, SGDP_SAS_3mer_counts, mut = "AAC->C", dataset = "SGDP")
-j <- CI.plot(SGDP_AFR_3mer_counts, SGDP_EUR_3mer_counts, SGDP_EAS_3mer_counts, SGDP_SAS_3mer_counts, mut = "TAC->C", dataset = "SGDP")
-
-grid.arrange(a,b, c, d, e, blank, blank, blank, f, g, h, i, j, blank, blank, blank, ncol = 4)
-```
-
-**Supplementary Figure 8:** Approximate 95% confidence intervals of estimated mutation rate for all signature #3 polymorphisms.  Rate estimates are shown for Africa (AFR), Europe (EUR), South Asia (SAS), and East Asia (EAS) within 1,000 Genomes (A-E) and SGDP (F-J).
-
-***********************************************************************************************************
-
-\pagebreak
-
-```{r S F 9}
+```{r S F 8}
 a <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, mut = "GCG->G", dataset = "1,000 Genomes")
 b <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, mut = "ACG->G", dataset = "1,000 Genomes")
 c <- CI.plot(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, mut = "CCG->A", dataset = "1,000 Genomes")
@@ -734,7 +712,7 @@ h <- CI.plot(SGDP_AFR_3mer_counts, SGDP_EUR_3mer_counts, SGDP_EAS_3mer_counts, S
 grid.arrange(a,b, c, d, e, f, g, h, ncol = 4)
 ```
 
-**Supplementary Figure 9:** Approximate 95% confidence intervals of estimated mutation rate for all signature #5 polymorphisms.  Rate estimates are shown for Africa (AFR), Europe (EUR), South Asia (SAS), and East Asia (EAS) within 1,000 Genomes (A-D) and SGDP (E-H).
+**Supplementary Figure 8:** Approximate 95% confidence intervals of estimated mutation rate for all signature #5 polymorphisms.  Rate estimates are shown for Africa (AFR), Europe (EUR), South Asia (SAS), and East Asia (EAS) within 1,000 Genomes (A-D) and SGDP (E-H).
 
 ***********************************************************************************************************
 
@@ -795,7 +773,7 @@ subrate.scplot <- function(count1, count2, mut, pops = c("Pop 1", "Pop 2"), labe
 }
 ```
 
-```{r S 10 make figure, fig.height = 7.5, fig.width=7}
+```{r S 9 make figure, fig.height = 7.5, fig.width=7}
 a <- subrate.scplot(EAS_7mer_counts, EUR_7mer_counts, "TCC->T", pops = c("East Asia", "Europe"))
 b <- subrate.scplot(EAS_7mer_counts, EUR_7mer_counts, "ACC->T", pops = c("East Asia", "Europe"))
 c <- subrate.scplot(EAS_7mer_counts, EUR_7mer_counts, "TCT->T", pops = c("East Asia", "Europe"))
@@ -806,13 +784,13 @@ g <- subrate.scplot(EAS_7mer_counts, EUR_7mer_counts, "GCC->T", pops = c("East A
 grid.arrange(a,b,c,d,e,f,g, ncol = 3)
 ```
 
-**Supplementary Figure 10:** Rates of all 7-mer expansions of each signature #1 polymorphism in Europe versus East Asia. Each point represents a 7-mer expansion of the 3-mer subtype shown, plotted based on its estimated mutation rate in each of the two populations displayed. Colors indicate the log (base 10) of the number of substitutions observed for that 7-mer class.  Europe and East Asia were selected to visualize this comparison because the difference in mutation rate for signature #1 3-mers is most strong and consistent between these populations. Generally, these polymorphisms match case II (see main text): enrichment is consistent across 7mers, with some expected amount of noise.
+**Supplementary Figure 9:** Rates of all 7-mer expansions of each signature #1 polymorphism in Europe versus East Asia. Each point represents a 7-mer expansion of the 3-mer subtype shown, plotted based on its estimated mutation rate in each of the two populations displayed. Colors indicate the log (base 10) of the number of substitutions observed for that 7-mer class.  Europe and East Asia were selected to visualize this comparison because the difference in mutation rate for signature #1 3-mers is most strong and consistent between these populations. Generally, these polymorphisms match case II (see main text): enrichment is consistent across 7mers, with some expected amount of noise.
 
 ***********************************************************************************************************
 
 \pagebreak
 
-```{r S 11 make figure, fig.height = 7.5, fig.width=7}
+```{r S 10 make figure, fig.height = 7.5, fig.width=7}
 a <- subrate.scplot(AFR_7mer_counts, EAS_7mer_counts, "GAT->T", pops = c("Africa", "East Asia"))
 b <- subrate.scplot(AFR_7mer_counts, EAS_7mer_counts, "ACC->A", pops = c("Africa", "East Asia"))
 c <- subrate.scplot(AFR_7mer_counts, EAS_7mer_counts, "GAC->T", pops = c("Africa", "East Asia"))
@@ -824,13 +802,13 @@ h <- subrate.scplot(AFR_7mer_counts, EAS_7mer_counts, "CCC->G", pops = c("Africa
 grid.arrange(a,b,c, d, e, f, g, h, ncol = 3)
 ```
 
-**Supplementary Figure 11:** Rates of all 7-mer expansions of each signature #2 polymorphism in Africa versus East Asia. Again, the population-specific enrichment is consistent across 7mers, consistent with case II.
+**Supplementary Figure 10:** Rates of all 7-mer expansions of each signature #2 polymorphism in Africa versus East Asia. Again, the population-specific enrichment is consistent across 7mers, consistent with case II.
 
 ***********************************************************************************************************
 
 \pagebreak
 
-```{r S12 functions}
+```{r S11 functions}
 # calculates homogeneity test p values for pairwise comparisons of two dfs of counts
 pairwise.chi <- function(counts.1, counts.2, filter = T){
   n.contexts = length(counts.1$Context)
@@ -857,7 +835,7 @@ pairwise.chi <- function(counts.1, counts.2, filter = T){
 ```
 
 
-```{r S12 make figure, fig.height = 7.5, fig.width=7}
+```{r S11 make figure, fig.height = 7.5, fig.width=7}
 p.CDXJPT <- pairwise.chi(CDX_EAS_7mer_counts, JPT_EAS_7mer_counts)
 p.CDXJPT <- subset(p.CDXJPT, is.element(CDX_EAS_7mer_counts$X3mer, c("AAC->C", "CAC->C", "TAT->T", "GAC->C", "TAC->C")))
 p.CDXJPT$fdr <- p.adjust(p.CDXJPT$p, method = "fdr")
@@ -872,20 +850,47 @@ e <- subrate.scplot(CDX_EAS_7mer_counts, JPT_EAS_7mer_counts, "TAT->T", pops = c
 grid.arrange(a,b,c,d,e, ncol = 2)
 ```
 
-**Supplementary Figure 12:** Rates of all 7-mer expansions of each signature #3 signature in Japanese versus Chinese Dai. Labeled points are those which were significantly variable between Japanese and Chinese Dai (fdr < 0.05 among all signature #3 7-mer expansions).
+**Supplementary Figure 11:** Rates of all 7-mer expansions of each signature #3 signature in Japanese versus Chinese Dai. Labeled points are those which were significantly variable between Japanese and Chinese Dai (fdr < 0.05 among all signature #3 7-mer expansions).
 
 ***********************************************************************************************************
 
 \pagebreak
 
-```{r S F 13, fig.height=3, fig.width=4, fig.align= "center"}
+```{r S F 12, fig.height=3, fig.width=4, fig.align= "center"}
 a <- CI.plot(AFR_7mer_counts, EUR_7mer_counts, EAS_7mer_counts, SAS_7mer_counts, mut = "CAAACCC->C", dataset = "1,000 Genomes")
 b <- CI.plot(SGDP_AFR_7mer_counts, SGDP_EUR_7mer_counts, SGDP_EAS_7mer_counts, SGDP_SAS_7mer_counts, mut = "CAAACCC->C", dataset = "SGDP")
 
 grid.arrange(a,b, ncol = 2)
 ```
 
-**Supplementary Figure 13:** Approximate 95% confidence intervals of estimated mutation rate for CAAACCC$\rightarrow$C in Africa (AFR), Europe (EUR), South Asia (SAS), and East Asia (EAS). Estimates were made from (A) 1,000 Genomes, and (B) SGDP.  Note: Only seven CAAACCC$\rightarrow$C variants were observed in South Asia withn SGDP, so estimation of this quantity is highly uncertain.
+**Supplementary Figure 12:** Approximate 95% confidence intervals of estimated mutation rate for CAAACCC$\rightarrow$C in Africa (AFR), Europe (EUR), South Asia (SAS), and East Asia (EAS). Estimates were made from (A) 1,000 Genomes, and (B) SGDP.  Note: Only seven CAAACCC$\rightarrow$C variants were observed in South Asia withn SGDP, so estimation of this quantity is highly uncertain.
+
+***********************************************************************************************************
+
+\pagebreak
+
+```{r}
+a <- ggplot(data = AFR_7mer_counts, aes(x = Count)) + geom_histogram() +
+     xlim(c(0, 10000)) + ylim(c(0, 2500)) +
+  scale_x_log10() +
+  labs(title = "Africa (1,000 Genomes)", x = "Number of Observed Polymorphisms")
+b <- ggplot(data = SAS_7mer_counts, aes(x = Count)) + geom_histogram() +
+    xlim(c(0, 10000)) + ylim(c(0, 2500)) +
+  scale_x_log10() +
+  labs(title = "South Asia (1,000 Genomes)", x = "Number of Observed Polymorphisms")
+c <- ggplot(data = SGDP_AFR_7mer_counts, aes(x = Count)) + geom_histogram() +
+     xlim(c(0, 10000)) + ylim(c(0, 2500)) +
+  scale_x_log10() +
+  labs(title = "Africa (SGDP)", x = "Number of Observed Polymorphisms")
+d <- ggplot(data = SGDP_SAS_7mer_counts, aes(x = Count)) + geom_histogram() +
+  xlim(c(0, 10000)) + ylim(c(0, 2500)) +
+  scale_x_log10() +
+  labs(title = "South Asia (SGDP)", x = "Number of Observed Polymorphisms")
+
+grid.arrange(a, b, c, d, ncol = 2)
+```
+
+**Supplementary Figure 13:** Histogram of the number of observed polymorphisms for all 24,576 possible 7mers in representative populations from 1,000 Genomes and SGDP.  The populations shown are Africa and South Asia because these are the populations with the most and the fewest observed polymorphisms overall (respectively). All x-axes use a log base 10 scale.
 
 ***********************************************************************************************************
 
@@ -1014,9 +1019,3 @@ grid.arrange(p4.afr,p4.eas,p4.eur,p4.sas,ncol=2)
 
 \pagebreak
 
-```{r S13 upload data}
-afrDAFprof5 = read.table("DAF_spectra/AFR_DAFbin_enrichment_profile5.txt",header=T) %>% tbl_df()
-easDAFprof5 = read.table("DAF_spectra/EAS_DAFbin_enrichment_profile5.txt",header=T) %>% tbl_df()
-eurDAFprof5 = read.table("DAF_spectra/EUR_DAFbin_enrichment_profile5.txt",header=T) %>% tbl_df()
-sasDAFprof5 = read.table("DAF_spectra/SAS_DAFbin_enrichment_profile5.txt",header=T) %>% tbl_df()
-```
