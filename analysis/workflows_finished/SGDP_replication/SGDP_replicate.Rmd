@@ -528,7 +528,6 @@ ordered.p <- function(pdata){
 
 pairwise.op <- function(pdata){
   # preprocess data to order and remove nas 
-  pdata <- pdata[complete.cases(pdata$p),]
   myorder <- order(pdata$p)
   n.muts <- length(pdata$p)
   
@@ -545,7 +544,11 @@ pairwise.op <- function(pdata){
     j <- myorder[i]
     mut <-c(pdata$Counts1[j], pdata$Counts2[j])
     data <- cbind(mut, not.mut)
-    p.ordered[j] <- chisq.test(data)$p.value
+    w.e <- tryCatch(chisq.test(data), warning = function(w) w, error = function(e) e)
+    warning <- is(w.e, "warning")
+    error <- is(w.e, "error")
+    if (warning | error){
+      p.ordered[j] <- NA} else {p.ordered[j] <- chisq.test(data)$p.value}
     
     # add these mutations to the not.mutated counts for future tests
     not.mut <- not.mut + mut

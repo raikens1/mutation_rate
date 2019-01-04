@@ -120,7 +120,6 @@ ordered.p <- function(pdata){
 
 pairwise.op <- function(pdata){
   # preprocess data to order and remove nas 
-  pdata <- pdata[complete.cases(pdata$p),]
   myorder <- order(pdata$p)
   n.muts <- length(pdata$p)
   
@@ -137,7 +136,11 @@ pairwise.op <- function(pdata){
     j <- myorder[i]
     mut <-c(pdata$Counts1[j], pdata$Counts2[j])
     data <- cbind(mut, not.mut)
-    p.ordered[j] <- chisq.test(data)$p.value
+    w.e <- tryCatch(chisq.test(data), warning = function(w) w, error = function(e) e)
+    warning <- is(w.e, "warning")
+    error <- is(w.e, "error")
+    if (warning | error){
+      p.ordered[j] <- NA} else {p.ordered[j] <- chisq.test(data)$p.value}
     
     # add these mutations to the not.mutated counts for future tests
     not.mut <- not.mut + mut
@@ -357,10 +360,14 @@ CI.plot.bygroup <- function(AFR, EUR, EAS, SAS, muts, groupname = "mutation grou
 
 ```{r F1BCD make, fig.height=2.5, fig.width=6.5}
 s1 <- c("TCT->T", "ACC->T", "TCA->T", "CCC->T", "ACT->T", "TCC->T", "GCC->T")
-a <- CI.plot.bygroup(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, s1, "profile #1")
+a <- CI.plot.bygroup(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, s1, "signature #1")
 
-s2 <- c("GAT->T", "ACC->A", "GAC->T")
-b <- CI.plot.bygroup(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, s2, "profile #2")
+s2a <- c("GAT->T", "ACC->A", "GAC->T")
+b1 <- CI.plot.bygroup(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, s2a, "signature #2a")
+
+s2b <- c("GCC->A", "TCC->A", "CCC->A", "CCC->G", "GAA->T")
+b2 <- CI.plot.bygroup(AFR_3mer_counts, EUR_3mer_counts, EAS_3mer_counts, SAS_3mer_counts, s2b, "signature #2b")
+grid.arrange(a, b1,b2, ncol = 3)
 ```
 
 ## D: CI plots for signal 3
@@ -428,8 +435,8 @@ muts1E <- c("CAC->C", "TAT->T", "GAC->C", "AAC->C", "TAC->C")
 ```
 
 ```{r F1E make, fig.height=3, fig.width = 6.75}
-c <- CI.plot.subpop.bygroup(subpops1E, muts1E, popnames1E, colors1E, "profile #3 in East Asia")
-grid.draw(cbind(ggplotGrob(a), ggplotGrob(b), ggplotGrob(c), size = "last"))
+c <- CI.plot.subpop.bygroup(subpops1E, muts1E, popnames1E, colors1E, "signature #3 in East Asia")
+grid.draw(cbind(ggplotGrob(a), ggplotGrob(b1),ggplotGrob(b2), ggplotGrob(c), size = "last"))
 ```
 
 # Figure 2
@@ -650,7 +657,7 @@ EASpopnames <- c("CDX", "KHV", "CHS", "CHB", "JPT")
 
 ```{r F3BC make, fig.height = 4, fig.width = 7}
 b <- subrate.scplot(CDX_EAS_7mer_counts, JPT_EAS_7mer_counts, "AAC->C", c("Chinese Dai", "Japanese"), JPT7mers, lims = c(0,1.24e-8), widemargin = T)
-c <- CI.plot.subpop.bygroup(EASsubpops, JPT7mers, EASpopnames, rep("red", 5), "significant 7-mers within profile #4")
+c <- CI.plot.subpop.bygroup(EASsubpops, JPT7mers, EASpopnames, rep("red", 5), "significant 7-mers within signature #4")
 grid.draw(cbind(ggplotGrob(b), ggplotGrob(c), size = "last"))
 ```
 
